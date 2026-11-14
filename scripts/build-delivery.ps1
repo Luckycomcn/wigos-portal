@@ -1,5 +1,5 @@
 param(
-    [string]$ImageTag = 'new-oscar-portal-demo:1.0.0',
+    [string]$ImageTag = 'wigos-portal:1.0.0',
     [string]$AmapKey = '',
     [string]$TiandituKey = '',
     [string]$EnvFile = '.env.local',
