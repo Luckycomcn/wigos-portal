@@ -112,7 +112,7 @@ export default {
       "countriesNote": "WMO 代码表条目",
       "observationTypes": "站点类型",
       "observationTypesNote": "（记录的 WMDR 站点类型，不含 unknown）",
-      "lastUpdate": "最近更新",
+      "lastUpdate": "最新记录创建日期",
       "lastUpdateNote": "GOFC 记录创建日期"
     },
     "hint": {

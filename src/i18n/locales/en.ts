@@ -112,7 +112,7 @@ export default {
       "countriesNote": "WMO code list entries",
       "observationTypes": "Facility types",
       "observationTypesNote": "Types in catalogue",
-      "lastUpdate": "Last update",
+      "lastUpdate": "Latest record added",
       "lastUpdateNote": "GOFC creation date"
     },
     "hint": {

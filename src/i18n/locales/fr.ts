@@ -96,7 +96,7 @@ export default {
       "countriesNote": "Entrées du registre OMM",
       "observationTypes": "Types de stations",
       "observationTypesNote": "Types du catalogue",
-      "lastUpdate": "Dernière mise à jour",
+      "lastUpdate": "Dernier enregistrement ajouté",
       "lastUpdateNote": "Date de création GOFC"
     },
     "searchRemoteError": "La recherche dans le catalogue a échoué. Veuillez réessayer. Aucun résultat de démonstration n’est affiché.",
