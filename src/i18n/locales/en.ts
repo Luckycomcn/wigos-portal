@@ -1,11 +1,11 @@
 // Messages used by the retained pages. Untranslated messages use English fallback.
 export default {
   "nav": {
+    "about": "About",
     "home": "Home",
     "search": "Search",
     "export": "Export",
-    "language": "Language",
-    "about": "About"
+    "language": "Language"
   },
   "header": {
     "portalName": "WIGOS Metadata Portal",
@@ -48,13 +48,13 @@ export default {
     "searchPlaceholder": "Search"
   },
   "route": {
+    "about": "About",
     "home": "Homepage",
     "search": "Search",
     "station": "Station",
     "stationSearch": "Station search",
     "stationReport": "Station report",
-    "export": "Export and download",
-    "about": "About"
+    "export": "Export and download"
   },
   "sidebar": {
     "quickAccess": "Quick access",
@@ -107,13 +107,13 @@ export default {
     "advancedSearch": "Advanced Search",
     "stats": {
       "totalStations": "Total stations",
-      "totalStationsNote": "(declared + assessed)",
+      "totalStationsNote": "Live GOFC count",
       "countries": "Countries / territories",
-      "countriesNote": "with reporting stations",
-      "observationTypes": "Observation types",
+      "countriesNote": "WMO code list entries",
+      "observationTypes": "Facility types",
       "observationTypesNote": "Types in catalogue",
       "lastUpdate": "Last update",
-      "lastUpdateNote": "Latest catalogue record"
+      "lastUpdateNote": "GOFC creation date"
     },
     "hint": {
       "none": "No station found for \"{term}\", showing all stations.",
@@ -244,8 +244,8 @@ export default {
     "email": "Email"
   },
   "map": {
-    "filteredSnapshot": "Filtered map snapshot: {date} UTC · {count} stations in this view (dense points grouped)",
-    "overviewSnapshot": "Station overview (dense points grouped), snapshot: {date} UTC",
+    "filteredSnapshot": "Filtered map snapshot: {date} · {count} stations in this view (dense points grouped)",
+    "overviewSnapshot": "Station overview (dense points grouped), snapshot: {date}",
     "overviewUnmapped": "{count} records without valid point coordinates",
     "overviewZoomHint": "Click this map point to zoom in and inspect stations.",
     "identifying": "Please wait, identifying stations...",

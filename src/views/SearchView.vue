@@ -6,7 +6,7 @@
       <label v-for="field in fields" :key="field.key" class="criterion">
         <span>{{ field.label }}</span>
         <el-select v-model="filters[field.key]" filterable clearable :placeholder="$t('common.all')" :aria-label="$t('search.filterAria')">
-          <el-option v-for="option in field.options" :key="option" :label="option" :value="option" />
+          <el-option v-for="option in field.options" :key="option" :label="field.key === 'program' ? programTitle(option) : option" :value="option" />
         </el-select>
       </label>
     </aside>
@@ -64,7 +64,7 @@ import 'element-plus/es/components/input/style/css'
 import 'element-plus/es/components/select/style/css'
 import { useI18n } from 'vue-i18n'
 import { searchFacilities, featureToRow, type WigosFeature } from '../api/wigos'
-import { facilityTypes, programAffiliations, variableInfo, wmoRegions } from '../data/wmdrCodes'
+import { facilityTypes, programAffiliations, loadProgramAffiliations, programTitle, variableInfo, wmoRegions } from '../data/wmdrCodes'
 import { territories } from '../data/wmdrTerritories'
 import variableTreeRaw from '../data/variableTree.json'
 
@@ -85,6 +85,9 @@ interface Station {
 }
 
 type FilterKey = 'type' | 'program' | 'variable' | 'ra' | 'terr'
+
+const programmeOptions = ref([...programAffiliations])
+onMounted(async () => { programmeOptions.value = await loadProgramAffiliations() })
 
 const route = useRoute()
 const { t } = useI18n()
@@ -118,7 +121,7 @@ const variableIdByName = new Map(variableOptions.map((item) => [item.text, item.
 
 const fields = computed<{ key: FilterKey; label: string; options: string[] }[]>(() => [
   { key: 'type', label: t('search.field.type'), options: facilityTypes.filter((type) => type.id !== 'unknown').map((type) => type.title) },
-  { key: 'program', label: t('search.field.program'), options: programAffiliations.map((program) => program.title) },
+  { key: 'program', label: t('search.field.program'), options: programmeOptions.value.map((program) => program.id) },
   { key: 'variable', label: t('search.field.variable'), options: variableOptions.map((item) => item.text) },
   { key: 'ra', label: t('search.field.region'), options: wmoRegions.map((region) => region.title) },
   { key: 'terr', label: t('search.field.territory'), options: territories.map((territory) => territory.title) },

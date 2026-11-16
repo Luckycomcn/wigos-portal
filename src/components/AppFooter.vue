@@ -24,6 +24,7 @@
     </span>
     <span class="footer-version">
       @ 2026 <a :href="repositoryUrl" target="_blank" rel="noopener noreferrer">wigos-portal</a> {{ version }}
+      · <router-link to="/about">{{ $t('nav.about') }}</router-link>
     </span>
   </div>
 </template>

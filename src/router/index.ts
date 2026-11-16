@@ -19,8 +19,8 @@ const router = createRouter({
       component: () => import('../views/StationReportView.vue'),
       meta: { title: 'route.stationReport', crumbs: ['route.search', 'route.stationSearch', 'route.stationReport'] },
     },
-    { path: '/export', name: 'export', component: () => import('../views/ExportView.vue'), meta: { title: 'route.export', crumbs: ['route.export'] } },
     { path: '/about', name: 'about', component: () => import('../views/AboutView.vue'), meta: { title: 'route.about', crumbs: ['route.about'] } },
+    { path: '/export', name: 'export', component: () => import('../views/ExportView.vue'), meta: { title: 'route.export', crumbs: ['route.export'] } },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 })

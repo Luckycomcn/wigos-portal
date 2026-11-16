@@ -1,11 +1,11 @@
 // Messages used by the retained pages. Untranslated messages use English fallback.
 export default {
   "nav": {
+    "about": "Acerca de",
     "home": "Inicio",
     "search": "Buscar",
     "export": "Exportar",
-    "language": "Idioma",
-    "about": "Acerca de"
+    "language": "Idioma"
   },
   "header": {
     "portalName": "Portal de metadatos WIGOS",
@@ -44,13 +44,13 @@ export default {
     "searchPlaceholder": "Buscar"
   },
   "route": {
+    "about": "Acerca de",
     "home": "Página de inicio",
     "search": "Buscar",
     "station": "Estación",
     "stationSearch": "Búsqueda de estaciones",
     "stationReport": "Informe de estación",
-    "export": "Exportar y descargar",
-    "about": "Acerca de"
+    "export": "Exportar y descargar"
   },
   "sidebar": {
     "quickAccess": "Acceso rápido",
@@ -91,13 +91,13 @@ export default {
     "advancedSearch": "Búsqueda avanzada",
     "stats": {
       "totalStations": "Total de estaciones",
-      "totalStationsNote": "(declaradas + evaluadas)",
+      "totalStationsNote": "Recuento GOFC en vivo",
       "countries": "Países / territorios",
-      "countriesNote": "con estaciones que notifican",
-      "observationTypes": "Tipos de observación",
+      "countriesNote": "Entradas del registro OMM",
+      "observationTypes": "Tipos de estaciones",
       "observationTypesNote": "Tipos del catálogo",
       "lastUpdate": "Última actualización",
-      "lastUpdateNote": "Último registro del catálogo"
+      "lastUpdateNote": "Fecha de creación GOFC"
     },
     "searchRemoteError": "La búsqueda en el catálogo falló. Inténtelo de nuevo. No se muestran resultados de demostración.",
     "typeCountError": "No se pudo obtener el número de tipos de estaciones con datos.",
@@ -165,8 +165,8 @@ export default {
     "demoNote": "Conectado al catálogo en línea. Las exportaciones obtienen 250 registros por página y pueden cancelarse. La descarga utiliza los mismos datos que la vista previa."
   },
   "map": {
-    "filteredSnapshot": "Mapa filtrado: instantánea del {date} UTC · {count} estaciones en esta vista (puntos densos agrupados)",
-    "overviewSnapshot": "Vista general de estaciones (puntos densos agrupados), instantánea: {date} UTC",
+    "filteredSnapshot": "Mapa filtrado: instantánea del {date} · {count} estaciones en esta vista (puntos densos agrupados)",
+    "overviewSnapshot": "Vista general de estaciones (puntos densos agrupados), instantánea: {date}",
     "overviewUnmapped": "{count} registros sin coordenadas puntuales válidas",
     "overviewZoomHint": "Pulse este punto para ampliar y consultar las estaciones.",
     "identifying": "Espere, identificando estaciones...",

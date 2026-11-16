@@ -1,11 +1,11 @@
 // Messages used by the retained pages. Untranslated messages use English fallback.
 export default {
   "nav": {
+    "about": "À propos",
     "home": "Accueil",
     "search": "Recherche",
     "export": "Exporter",
-    "language": "Langue",
-    "about": "À propos"
+    "language": "Langue"
   },
   "header": {
     "portalName": "Portail de métadonnées WIGOS",
@@ -44,13 +44,13 @@ export default {
     "searchPlaceholder": "Rechercher"
   },
   "route": {
+    "about": "À propos",
     "home": "Page d’accueil",
     "search": "Recherche",
     "station": "Station",
     "stationSearch": "Recherche de stations",
     "stationReport": "Rapport de station",
-    "export": "Exporter et télécharger",
-    "about": "À propos"
+    "export": "Exporter et télécharger"
   },
   "sidebar": {
     "quickAccess": "Accès rapide",
@@ -91,13 +91,13 @@ export default {
     "advancedSearch": "Recherche avancée",
     "stats": {
       "totalStations": "Nombre total de stations",
-      "totalStationsNote": "(déclarées + évaluées)",
+      "totalStationsNote": "Nombre GOFC en direct",
       "countries": "Pays / territoires",
-      "countriesNote": "avec des stations déclarantes",
-      "observationTypes": "Types d’observation",
+      "countriesNote": "Entrées du registre OMM",
+      "observationTypes": "Types de stations",
       "observationTypesNote": "Types du catalogue",
       "lastUpdate": "Dernière mise à jour",
-      "lastUpdateNote": "Dernière fiche du catalogue"
+      "lastUpdateNote": "Date de création GOFC"
     },
     "searchRemoteError": "La recherche dans le catalogue a échoué. Veuillez réessayer. Aucun résultat de démonstration n’est affiché.",
     "typeCountError": "Impossible de récupérer le nombre de types de stations renseignés.",
@@ -165,8 +165,8 @@ export default {
     "demoNote": "Connecté au catalogue en ligne. Les exportations récupèrent 250 enregistrements par page et peuvent être annulées. Le téléchargement utilise les mêmes données que l’aperçu."
   },
   "map": {
-    "filteredSnapshot": "Carte filtrée : instantané du {date} UTC · {count} stations dans cette vue (points denses regroupés)",
-    "overviewSnapshot": "Aperçu des stations (points denses regroupés), instantané : {date} UTC",
+    "filteredSnapshot": "Carte filtrée : instantané du {date} · {count} stations dans cette vue (points denses regroupés)",
+    "overviewSnapshot": "Aperçu des stations (points denses regroupés), instantané : {date}",
     "overviewUnmapped": "{count} fiches sans coordonnées ponctuelles valides",
     "overviewZoomHint": "Cliquez sur ce point pour zoomer et consulter les stations.",
     "identifying": "Veuillez patienter, identification des stations...",

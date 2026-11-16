@@ -159,7 +159,7 @@ Linux containers mode for actual packaging; `-Check` does not require Docker.
 
 3. **Original WMDR XML**
 
-   The XML download link points directly at the `rel="original"` URL supplied by the catalogue record (today `https://oscar.wmo.int/oai/provider`). No `/wmdr-source` proxy exists in `nginx.conf` or `vite.config.ts`, and no CORS-dependent fetch is made. That OAI endpoint will be retired with the OSCAR/Surface renewal; when the original WMDR2 documents move to a new archive, the catalogue link changes and the portal follows it without a code change.
+   The XML download link points directly at the `rel="original"` URL supplied by the catalogue record (today `https://oscar.wmo.int/oai/provider`). No `/wmdr-source` proxy exists in `nginx.conf` or `vite.config.ts`, and no CORS-dependent fetch is made. That OAI endpoint will be retired with the OSCAR/Surface renewal; when the original WMDR2 documents move to a new archive, the catalogue link changes and the portal follows it without a code change. `nginx.conf` still keeps the `/_AMapService/` proxies for the AMap basemap styles; those are unrelated to WMDR downloads.
 
 4. **Styles and images**
 

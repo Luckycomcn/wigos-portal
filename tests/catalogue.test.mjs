@@ -233,3 +233,26 @@ await maps.loadFilteredMap({types:['landFixed','landMobile']},delta=>lateDeltas.
 await new Promise(resolve=>setTimeout(resolve,90))
 assert.ok(lateDeltas.length===2 && lateDeltas.every(id=>id.startsWith('live-')),'abandoned snapshot workers must not emit stale points after live fallback completes')
 console.log('PASS: delayed snapshot responses cannot corrupt completed live fallback')
+
+// Every register code remains selectable and resolves to its exact GOFC identifier.
+const codes = modules.get(resolve('src/data/wmdrCodes.ts')).namespace
+assert.ok(codes.programAffiliations.length > 600)
+assert.equal(new Set(codes.programAffiliations.map(code => code.id)).size, codes.programAffiliations.length)
+for (const code of codes.programAffiliations) assert.equal(codes.programIdByTitle(code.title), code.id)
+assert.ok(codes.programAffiliations.some(code => code.id === 'GCWCryoNet'))
+
+// Original XML follows GOFC's source link without an XML proxy or CORS fetch.
+const original = 'https://oscar.wmo.int/oai/provider?verb=GetRecord&identifier=test'
+let opened
+globalThis.document = { createElement() { return { click() { opened = this } } } }
+calls = []
+globalThis.fetch = async url => {
+  calls.push(String(url))
+  return new Response(JSON.stringify({ ...sample, links: [{ rel: 'original', type: 'application/xml', href: original }] }))
+}
+await downloads.downloadCatalogueRecord(sample.id, 'xml')
+assert.equal(calls.length, 1)
+assert.equal(opened.href, original)
+assert.equal(opened.target, '_blank')
+assert.equal(opened.rel, 'noopener noreferrer')
+console.log('PASS: complete programme register resolves exact IDs; original XML opens directly')

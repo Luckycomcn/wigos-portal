@@ -29,6 +29,11 @@ Use the Node.js and npm versions listed under "Requirements" in the README. Do n
 - Fork the repository, create a topic branch from `main`, and keep one logical change per pull request.
 - Describe what changed, why, and how you verified it. Include screenshots for visual changes.
 - Run `npm run build` before submitting; the type-check stage must pass with no `vue-tsc` errors.
+- Run the test suite before submitting. The tests use `node:test` and `vm.SourceTextModule`, so use Node.js 22.12 or newer:
+
+  ```bash
+  node --experimental-vm-modules --test tests/*.mjs
+  ```
 - Do not add files copied from the current OSCAR/Surface website or other third-party sites (including stylesheets, scripts, fonts, logos and images). See [NOTICE](NOTICE) for the licensing boundary. Reference vocabularies belong in `src/data/` and must carry their source.
 - Update all four locales in `src/i18n/locales/` (`en`, `zh`, `fr`, `es`) when adding or changing a user-visible message; English is the fallback.
 - Hash routes are declared in `src/router/index.ts`; new pages need a navigation entry in both `AppNavbar.vue` and the mobile menu in `AppLayout.vue`.

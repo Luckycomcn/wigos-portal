@@ -1,6 +1,6 @@
+import programAffiliationsRaw from './programAffiliations.json'
 import type { StationDomain } from './stations'
 import variableTreeRaw from './variableTree.json'
-import programAffiliationCodes from './programAffiliations.json'
 import { findTerritoryId, territories, territoryById, type WmdrTerritory } from './wmdrTerritories'
 
 export { findTerritoryId, territories, territoryById }
@@ -80,11 +80,55 @@ export function wmoRegionTitle(id?: string | null): string {
  * https://codes.wmo.int/wmdr/ProgramAffiliation. The bundled JSON is generated
  * by `npm run refresh:wmdr-codes` so advanced-search options always cover every
  * valid affiliation (including GCW CryoNet) without a runtime dependency on
- * codes.wmo.int or browser CORS.
+ * codes.wmo.int or browser CORS. `loadProgramAffiliations()` may refresh the
+ * list at runtime; this snapshot stays as the offline fallback.
+ *
+ * Titles are the plain register labels: the identifier is kept in `id` and is
+ * never prefixed onto the label, which is what users see in the filter.
  */
-export const programAffiliations: WmdrCode[] = programAffiliationCodes as WmdrCode[]
+export const programAffiliations: WmdrCode[] = [...programAffiliationsRaw]
+
+/** Codes retained for catalogue records that still reference them. */
+const LEGACY_PROGRAMMES: WmdrCode[] = [{ id: 'OceanSITES', title: 'OceanSITES' }]
 
 const programIndex = new Map(programAffiliations.map((p) => [p.id.toLowerCase(), p.title]))
+
+const PROGRAM_REGISTER_URL = 'https://codes.wmo.int/wmdr/ProgramAffiliation?_format=rdf'
+let programRequest: Promise<WmdrCode[]> | undefined
+
+/** Fetch once per page session. Offline, timeout, CORS and invalid responses retain the bundled list. */
+export function loadProgramAffiliations(): Promise<WmdrCode[]> {
+  return programRequest ??= (async () => {
+    try {
+      const response = await fetch(PROGRAM_REGISTER_URL, {
+        headers: { Accept: 'application/rdf+xml' },
+        signal: AbortSignal.timeout(10000),
+      })
+      if (!response.ok) throw new Error('WMO register request failed')
+      const document = new DOMParser().parseFromString(await response.text(), 'application/xml')
+      if (document.getElementsByTagName('parsererror').length) throw new Error('Invalid WMO XML')
+      const skos = 'http://www.w3.org/2004/02/skos/core#'
+      const rdfs = 'http://www.w3.org/2000/01/rdf-schema#'
+      const codes = new Map<string, WmdrCode>()
+      for (const member of Array.from(document.getElementsByTagNameNS(skos, 'member'))) {
+        const id = member.getElementsByTagNameNS(skos, 'notation')[0]?.textContent?.trim()
+        const label = member.getElementsByTagNameNS(rdfs, 'label')[0]?.textContent?.trim()
+        if (id) codes.set(id, { id, title: label || id })
+      }
+      // Reject error pages and truncated responses before replacing the fallback.
+      if (codes.size < 100 || !codes.has('GCWCryoNet')) throw new Error('Incomplete WMO register')
+      // Keep legacy codes the current register no longer publishes.
+      for (const code of LEGACY_PROGRAMMES) if (!codes.has(code.id)) codes.set(code.id, { ...code })
+      const updated = [...codes.values()].sort((a, b) => a.id.localeCompare(b.id))
+      programAffiliations.splice(0, programAffiliations.length, ...updated)
+      programIndex.clear()
+      for (const code of updated) programIndex.set(code.id.toLowerCase(), code.title)
+    } catch {
+      // The initial local snapshot remains usable throughout the request and on failure.
+    }
+    return [...programAffiliations]
+  })()
+}
 
 export function programTitle(id?: string | null): string {
   if (!id) return ''
