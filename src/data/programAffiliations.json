@@ -1,0 +1,2558 @@
+[
+  {
+    "id": "AARI",
+    "title": "AARI"
+  },
+  {
+    "id": "AARIUSIABPDB",
+    "title": "AARIUSIABPDB — AARI-USIABP"
+  },
+  {
+    "id": "ACTRIS",
+    "title": "ACTRIS"
+  },
+  {
+    "id": "ADD",
+    "title": "ADD"
+  },
+  {
+    "id": "ADNet",
+    "title": "ADNet"
+  },
+  {
+    "id": "ADSC",
+    "title": "ADSC — ADS-C"
+  },
+  {
+    "id": "AEROCAN",
+    "title": "AEROCAN"
+  },
+  {
+    "id": "AERONET",
+    "title": "AERONET"
+  },
+  {
+    "id": "AFIRS",
+    "title": "AFIRS"
+  },
+  {
+    "id": "AGAGE",
+    "title": "AGAGE"
+  },
+  {
+    "id": "AIREP",
+    "title": "AIREP"
+  },
+  {
+    "id": "AlaskaLTERGlider",
+    "title": "AlaskaLTERGlider — NSF Northern Gulf of Alaska Long Term Ecological Research"
+  },
+  {
+    "id": "AlseamarGlider",
+    "title": "AlseamarGlider — Alseamar scientific glider program"
+  },
+  {
+    "id": "AlterECOGlider",
+    "title": "AlterECOGlider — Alter_Eco glider program"
+  },
+  {
+    "id": "AMDAR",
+    "title": "AMDAR"
+  },
+  {
+    "id": "ANTONs",
+    "title": "ANTONs — ANTON(S)"
+  },
+  {
+    "id": "ANTONt",
+    "title": "ANTONt — ANTON(T)"
+  },
+  {
+    "id": "AOML",
+    "title": "AOML"
+  },
+  {
+    "id": "AOMLeSurfmar",
+    "title": "AOMLeSurfmar — AOML-E-SURFMAR"
+  },
+  {
+    "id": "AOMLGlider",
+    "title": "AOMLGlider — AOML Glider Program"
+  },
+  {
+    "id": "AOMLHurricaneALAMOFloats",
+    "title": "AOMLHurricaneALAMOFloats — AOML Hurricane ALAMO Floats"
+  },
+  {
+    "id": "AOMLMFDB",
+    "title": "AOMLMFDB — AOML-MF DB"
+  },
+  {
+    "id": "AOOSGlider",
+    "title": "AOOSGlider — AOOS Gliders"
+  },
+  {
+    "id": "APLUW",
+    "title": "APLUW — APL-UW"
+  },
+  {
+    "id": "argoArgentina",
+    "title": "argoArgentina — ARGO ARGENTINA"
+  },
+  {
+    "id": "argoAustralia",
+    "title": "argoAustralia — ARGO AUSTRALIA"
+  },
+  {
+    "id": "argoAustraliaEq",
+    "title": "argoAustraliaEq — ARGO AUSTRALIA EQ."
+  },
+  {
+    "id": "argoAWI",
+    "title": "argoAWI — ARGO AWI"
+  },
+  {
+    "id": "argoBGCAOML",
+    "title": "argoBGCAOML — Argo BGC, AOML"
+  },
+  {
+    "id": "argoBrazil",
+    "title": "argoBrazil — ARGO BRAZIL"
+  },
+  {
+    "id": "argoBrazilNavy",
+    "title": "argoBrazilNavy — ARGO BRAZIL NAVY"
+  },
+  {
+    "id": "argoBSH",
+    "title": "argoBSH — ARGO BSH"
+  },
+  {
+    "id": "argoCanada",
+    "title": "argoCanada — ARGO CANADA"
+  },
+  {
+    "id": "argoCanadaEq",
+    "title": "argoCanadaEq — Argo CANADA eq."
+  },
+  {
+    "id": "argoChile",
+    "title": "argoChile — ARGO CHILE"
+  },
+  {
+    "id": "argoChina",
+    "title": "argoChina — ARGO CHINA"
+  },
+  {
+    "id": "argoChinaSOA",
+    "title": "argoChinaSOA — ARGO CHINA SOA"
+  },
+  {
+    "id": "argoCostaRica",
+    "title": "argoCostaRica — ARGO COSTA RICA"
+  },
+  {
+    "id": "argoDeepChina",
+    "title": "argoDeepChina — Argo Deep, CHINA"
+  },
+  {
+    "id": "argoDenmark",
+    "title": "argoDenmark — ARGO DENMARK"
+  },
+  {
+    "id": "argoEcuador",
+    "title": "argoEcuador — ARGO ECUADOR"
+  },
+  {
+    "id": "argoEqAOML",
+    "title": "argoEqAOML — ARGO EQ. AOML"
+  },
+  {
+    "id": "argoEqAWI",
+    "title": "argoEqAWI — ARGO EQ. AWI"
+  },
+  {
+    "id": "argoEqBSH",
+    "title": "argoEqBSH — ARGO EQ. BSH"
+  },
+  {
+    "id": "argoEqChina",
+    "title": "argoEqChina — ARGO EQ. CHINA"
+  },
+  {
+    "id": "argoEqESPOMZ",
+    "title": "argoEqESPOMZ — ARGO EQ. ESP-OMZ"
+  },
+  {
+    "id": "argoEqFERHRI",
+    "title": "argoEqFERHRI — ARGO EQ. FERHRI"
+  },
+  {
+    "id": "argoEqFSU",
+    "title": "argoEqFSU — ARGO EQ. FSU"
+  },
+  {
+    "id": "argoEqHNFRI",
+    "title": "argoEqHNFRI — ARGO EQ. HNFRI"
+  },
+  {
+    "id": "argoEqIFM",
+    "title": "argoEqIFM — ARGO EQ. IFM"
+  },
+  {
+    "id": "argoEqIFM2",
+    "title": "argoEqIFM2 — ARGO EQ. IFM2"
+  },
+  {
+    "id": "argoEqIreland",
+    "title": "argoEqIreland — ARGO EQ. IRELAND"
+  },
+  {
+    "id": "argoEqJamstec",
+    "title": "argoEqJamstec — ARGO EQ. JAMSTEC"
+  },
+  {
+    "id": "argoEqJMA",
+    "title": "argoEqJMA — ARGO EQ. JMA"
+  },
+  {
+    "id": "argoEqNavoceano",
+    "title": "argoEqNavoceano — ARGO EQ. NAVOCEANO"
+  },
+  {
+    "id": "argoEqNDBC",
+    "title": "argoEqNDBC — ARGO EQ. NDBC"
+  },
+  {
+    "id": "argoEqNIPR",
+    "title": "argoEqNIPR — ARGO EQ. NIPR"
+  },
+  {
+    "id": "argoEqNRIFS",
+    "title": "argoEqNRIFS — ARGO EQ. NRIFS"
+  },
+  {
+    "id": "argoEqOIST",
+    "title": "argoEqOIST — ARGO EQ. OIST"
+  },
+  {
+    "id": "argoEqORI",
+    "title": "argoEqORI — ARGO EQ. ORI"
+  },
+  {
+    "id": "argoEqPMEL",
+    "title": "argoEqPMEL — ARGO EQ. PMEL"
+  },
+  {
+    "id": "argoEqPomme",
+    "title": "argoEqPomme — ARGO EQ. POMME"
+  },
+  {
+    "id": "argoEqSage",
+    "title": "argoEqSage — ARGO EQ. SAGE"
+  },
+  {
+    "id": "argoEqTNFRI",
+    "title": "argoEqTNFRI — ARGO EQ. TNFRI"
+  },
+  {
+    "id": "argoEqTSK",
+    "title": "argoEqTSK — ARGO EQ. TSK"
+  },
+  {
+    "id": "argoEqTU",
+    "title": "argoEqTU — ARGO EQ. TU"
+  },
+  {
+    "id": "argoEqUH",
+    "title": "argoEqUH — ARGO EQ. UH"
+  },
+  {
+    "id": "argoEqUHH",
+    "title": "argoEqUHH — ARGO EQ. UHH"
+  },
+  {
+    "id": "argoEqUMOSU",
+    "title": "argoEqUMOSU — ARGO EQ. UM-OSU"
+  },
+  {
+    "id": "argoEqVocals",
+    "title": "argoEqVocals — ARGO EQ. VOCALS"
+  },
+  {
+    "id": "argoEqWHOI",
+    "title": "argoEqWHOI — ARGO EQ. WHOI"
+  },
+  {
+    "id": "argoFinland",
+    "title": "argoFinland — ARGO FINLAND"
+  },
+  {
+    "id": "ARGOFPAIIGMMC",
+    "title": "ARGOFPAIIGMMC — Argo FPAII-GMMC"
+  },
+  {
+    "id": "argoGabon",
+    "title": "argoGabon — ARGO GABON"
+  },
+  {
+    "id": "argoGermany",
+    "title": "argoGermany — ARGO GERMANY"
+  },
+  {
+    "id": "argoGermany2025",
+    "title": "argoGermany2025 — Argo GERMANY 2025"
+  },
+  {
+    "id": "argoGOBGCSIO",
+    "title": "argoGOBGCSIO — Argo GO-BGC, SIO"
+  },
+  {
+    "id": "argoGOBGCUW",
+    "title": "argoGOBGCUW — Argo GO-BGC, UW"
+  },
+  {
+    "id": "argoGOBGCWHOI",
+    "title": "argoGOBGCWHOI — Argo GO-BGC, WHOI"
+  },
+  {
+    "id": "argoGOMBoemEq",
+    "title": "argoGOMBoemEq — Argo GOM-BOEM eq."
+  },
+  {
+    "id": "argoGreece",
+    "title": "argoGreece — ARGO GREECE"
+  },
+  {
+    "id": "argoHUEq",
+    "title": "argoHUEq — Argo eq. HU"
+  },
+  {
+    "id": "argoIFMGeomar",
+    "title": "argoIFMGeomar — ARGO IFM-GEOMAR"
+  },
+  {
+    "id": "argoIndia",
+    "title": "argoIndia — ARGO INDIA"
+  },
+  {
+    "id": "argoIndonesia",
+    "title": "argoIndonesia — Argo INDONESIA"
+  },
+  {
+    "id": "argoIreland",
+    "title": "argoIreland — ARGO IRELAND"
+  },
+  {
+    "id": "argoItaly",
+    "title": "argoItaly — ARGO ITALY"
+  },
+  {
+    "id": "argoJamstec",
+    "title": "argoJamstec — ARGO JAMSTEC"
+  },
+  {
+    "id": "argoJMA",
+    "title": "argoJMA — ARGO JMA"
+  },
+  {
+    "id": "argoKenya",
+    "title": "argoKenya — ARGO KENYA"
+  },
+  {
+    "id": "argoKiost",
+    "title": "argoKiost — ARGO KIOST"
+  },
+  {
+    "id": "argoLebanon",
+    "title": "argoLebanon — ARGO LEBANON"
+  },
+  {
+    "id": "argoMauritius",
+    "title": "argoMauritius — ARGO MAURITIUS"
+  },
+  {
+    "id": "argoMexCoUS",
+    "title": "argoMexCoUS — ARGO MEX-CO-US"
+  },
+  {
+    "id": "argoMexico",
+    "title": "argoMexico — ARGO MEXICO"
+  },
+  {
+    "id": "argoMIMRKMA",
+    "title": "argoMIMRKMA — ARGO NIMR/KMA"
+  },
+  {
+    "id": "ARGOMorocco",
+    "title": "ARGOMorocco — Argo Morocco"
+  },
+  {
+    "id": "argoNetherlands",
+    "title": "argoNetherlands — ARGO NETHERLANDS"
+  },
+  {
+    "id": "argoNewZealand",
+    "title": "argoNewZealand — ARGO NEW ZEALAND"
+  },
+  {
+    "id": "ARGONIMSKMA",
+    "title": "ARGONIMSKMA — Argo NIMS/KMA"
+  },
+  {
+    "id": "argoNorway",
+    "title": "argoNorway — ARGO NORWAY"
+  },
+  {
+    "id": "ARGOPeru",
+    "title": "ARGOPeru — Argo PERU"
+  },
+  {
+    "id": "argoPMEL",
+    "title": "argoPMEL — ARGO PMEL"
+  },
+  {
+    "id": "argoPoland",
+    "title": "argoPoland — ARGO POLAND"
+  },
+  {
+    "id": "argoPortugal",
+    "title": "argoPortugal — Argo Portugal"
+  },
+  {
+    "id": "argoRussia",
+    "title": "argoRussia — ARGO RUSSIA"
+  },
+  {
+    "id": "argoSaudiArabia",
+    "title": "argoSaudiArabia — ARGO SAUDI ARABIA"
+  },
+  {
+    "id": "argoSIO",
+    "title": "argoSIO — ARGO SIO"
+  },
+  {
+    "id": "argoSIOEqASIRI",
+    "title": "argoSIOEqASIRI — ARGO SIO EQ (ASIRI)"
+  },
+  {
+    "id": "argoSIOeqBGCSOLONOPP",
+    "title": "argoSIOeqBGCSOLONOPP — Argo SIO .eq. (BGCSOLONOPP)"
+  },
+  {
+    "id": "argoSIOEqOKMC",
+    "title": "argoSIOEqOKMC — ARGO SIO EQ. (OKMC)"
+  },
+  {
+    "id": "argoSIOEqSBE61NOPP",
+    "title": "argoSIOEqSBE61NOPP — Argo SIO eq. (SBE61NOPP)"
+  },
+  {
+    "id": "argoSouthAfrica",
+    "title": "argoSouthAfrica — ARGO SOUTH AFRICA"
+  },
+  {
+    "id": "argoSpain",
+    "title": "argoSpain — ARGO SPAIN"
+  },
+  {
+    "id": "argoSriLanka",
+    "title": "argoSriLanka — ARGO SRI LANKA"
+  },
+  {
+    "id": "argoSweden",
+    "title": "argoSweden — Argo Sweden"
+  },
+  {
+    "id": "argoTWREng",
+    "title": "argoTWREng — ARGO TWR ENGINEERING"
+  },
+  {
+    "id": "argoUK",
+    "title": "argoUK — ARGO UK"
+  },
+  {
+    "id": "argoUKBIO",
+    "title": "argoUKBIO — ARGO UK BIO"
+  },
+  {
+    "id": "argoUKEq",
+    "title": "argoUKEq — ARGO UK EQ."
+  },
+  {
+    "id": "argoUW",
+    "title": "argoUW — ARGO UW"
+  },
+  {
+    "id": "argoUWAplEq",
+    "title": "argoUWAplEq — ARGO UW-APL EQ."
+  },
+  {
+    "id": "argoUWEq",
+    "title": "argoUWEq — ARGO UW EQ."
+  },
+  {
+    "id": "ARGOUWMBARI",
+    "title": "ARGOUWMBARI — Argo UW-MBARI"
+  },
+  {
+    "id": "argoUWMbariEq",
+    "title": "argoUWMbariEq — ARGO UW-MBARI EQ."
+  },
+  {
+    "id": "ARGOUWSOCCOM",
+    "title": "ARGOUWSOCCOM — Argo UW-SOCCOM"
+  },
+  {
+    "id": "argoUWSoccomEq",
+    "title": "argoUWSoccomEq — ARGO UW-SOCCOM EQ."
+  },
+  {
+    "id": "argoUWSpursEq",
+    "title": "argoUWSpursEq — ARGO UW-SPURS EQ."
+  },
+  {
+    "id": "ARGOUWTPOSEQ",
+    "title": "ARGOUWTPOSEQ — Argo UW-TPOS eq."
+  },
+  {
+    "id": "argoUWUAEq",
+    "title": "argoUWUAEq — ARGO UW-UA EQ."
+  },
+  {
+    "id": "argoWHOI",
+    "title": "argoWHOI — ARGO WHOI"
+  },
+  {
+    "id": "argoWHOIEqIR",
+    "title": "argoWHOIEqIR — ARGO WHOI EQ. IR"
+  },
+  {
+    "id": "ARGOWHOIloopcurrentEQ",
+    "title": "ARGOWHOIloopcurrentEQ — Argo WHOI-Loop Current eq."
+  },
+  {
+    "id": "argoWHOIMRVEq",
+    "title": "argoWHOIMRVEq — ARGO WHOI-MRV EQ."
+  },
+  {
+    "id": "ARGOWHOISODAEQ",
+    "title": "ARGOWHOISODAEQ — Argo WHOI-SODA eq."
+  },
+  {
+    "id": "ASAPAWI",
+    "title": "ASAPAWI — ASAP-AWI"
+  },
+  {
+    "id": "ASAPJP",
+    "title": "ASAPJP — ASAP-JP"
+  },
+  {
+    "id": "ASAPKR",
+    "title": "ASAPKR — ASAP-KR"
+  },
+  {
+    "id": "ASAPMPI",
+    "title": "ASAPMPI — ASAP-MPI"
+  },
+  {
+    "id": "ASAPUS",
+    "title": "ASAPUS — ASAP-US"
+  },
+  {
+    "id": "ASAPZA",
+    "title": "ASAPZA — ASAP-ZA"
+  },
+  {
+    "id": "ASOGlider",
+    "title": "ASOGlider — Adriatic Sea Observatory"
+  },
+  {
+    "id": "AtlantOSH2020",
+    "title": "AtlantOSH2020 — AtlantOS_H2020"
+  },
+  {
+    "id": "AWIDB",
+    "title": "AWIDB — AWI-DB"
+  },
+  {
+    "id": "bioargoUMaine",
+    "title": "bioargoUMaine — BioArgo UMaine"
+  },
+  {
+    "id": "BOMDB",
+    "title": "BOMDB — BOM DB"
+  },
+  {
+    "id": "BOMMB",
+    "title": "BOMMB — BOM MB"
+  },
+  {
+    "id": "BOMTSU",
+    "title": "BOMTSU — BOM-TSU"
+  },
+  {
+    "id": "BPINC",
+    "title": "BPINC — BP INC"
+  },
+  {
+    "id": "brazilPNBOIAINPE",
+    "title": "brazilPNBOIAINPE — BRAZIL PNBOIA-INPE"
+  },
+  {
+    "id": "BSHDWDfixed",
+    "title": "BSHDWDfixed — BSH-DWD-FIXED"
+  },
+  {
+    "id": "BSHDWDMB",
+    "title": "BSHDWDMB — BSH-DWD-MB"
+  },
+  {
+    "id": "BSHMB",
+    "title": "BSHMB — BSH-MB"
+  },
+  {
+    "id": "BSRN",
+    "title": "BSRN"
+  },
+  {
+    "id": "BULARGO",
+    "title": "BULARGO"
+  },
+  {
+    "id": "C3S",
+    "title": "C3S — Copernicus Climate Change Service-C3S"
+  },
+  {
+    "id": "CANDHIS",
+    "title": "CANDHIS"
+  },
+  {
+    "id": "CAPMoN",
+    "title": "CAPMoN"
+  },
+  {
+    "id": "CARICOOS",
+    "title": "CARICOOS"
+  },
+  {
+    "id": "CARIOCA",
+    "title": "CARIOCA"
+  },
+  {
+    "id": "CASTNET",
+    "title": "CASTNET"
+  },
+  {
+    "id": "CDIP",
+    "title": "CDIP"
+  },
+  {
+    "id": "ceilometers",
+    "title": "ceilometers — Ceilometers"
+  },
+  {
+    "id": "centennialObservingstations",
+    "title": "centennialObservingstations — Centennial Observing Stations"
+  },
+  {
+    "id": "CEOASGlider",
+    "title": "CEOASGlider — CEOAS glider program"
+  },
+  {
+    "id": "Challenger",
+    "title": "Challenger"
+  },
+  {
+    "id": "CIS-LiNet",
+    "title": "CIS-LiNet"
+  },
+  {
+    "id": "CLIMATc",
+    "title": "CLIMATc — CLIMAT(C)"
+  },
+  {
+    "id": "CLIMATct",
+    "title": "CLIMATct — CLIMAT(CT)"
+  },
+  {
+    "id": "CLIMATt",
+    "title": "CLIMATt — CLIMAT(T)"
+  },
+  {
+    "id": "CLN",
+    "title": "CLN"
+  },
+  {
+    "id": "colombiaTSU",
+    "title": "colombiaTSU — COLOMBIA-TSU"
+  },
+  {
+    "id": "COMPSMB",
+    "title": "COMPSMB — COMPS-MB"
+  },
+  {
+    "id": "copernicusHRSSTFRM",
+    "title": "copernicusHRSSTFRM — COPERNICUS-HRSST-FRM"
+  },
+  {
+    "id": "coriolis",
+    "title": "coriolis — CORIOLIS"
+  },
+  {
+    "id": "coriolisBioargo",
+    "title": "coriolisBioargo — CORIOLIS-BIOARGO"
+  },
+  {
+    "id": "coriolisCanoa",
+    "title": "coriolisCanoa — CORIOLIS-CANOA"
+  },
+  {
+    "id": "coriolisCongas",
+    "title": "coriolisCongas — CORIOLIS-CONGAS"
+  },
+  {
+    "id": "coriolisDrake",
+    "title": "coriolisDrake — CORIOLIS-DRAKE"
+  },
+  {
+    "id": "coriolisEGEE",
+    "title": "coriolisEGEE — CORIOLIS-EGEE"
+  },
+  {
+    "id": "coriolisEqypt",
+    "title": "coriolisEqypt — CORIOLIS-EGYPT"
+  },
+  {
+    "id": "coriolisFlops",
+    "title": "coriolisFlops — CORIOLIS-FLOPS"
+  },
+  {
+    "id": "coriolisFlostral",
+    "title": "coriolisFlostral — CORIOLIS-FLOSTRAL"
+  },
+  {
+    "id": "coriolisFNOBJCOMMOPS",
+    "title": "coriolisFNOBJCOMMOPS — CORIOLIS-FNOB-JCOMMOPS"
+  },
+  {
+    "id": "coriolisFrontalis",
+    "title": "coriolisFrontalis — CORIOLIS-FRONTALIS"
+  },
+  {
+    "id": "coriolisGoodHope",
+    "title": "coriolisGoodHope — CORIOLIS-GOOD HOPE"
+  },
+  {
+    "id": "coriolisOvide",
+    "title": "coriolisOvide — CORIOLIS-OVIDE"
+  },
+  {
+    "id": "coriolisPirata",
+    "title": "coriolisPirata — CORIOLIS-PIRATA"
+  },
+  {
+    "id": "coriolisPrevimer",
+    "title": "coriolisPrevimer — CORIOLIS-PREVIMER"
+  },
+  {
+    "id": "coriolisProsat",
+    "title": "coriolisProsat — CORIOLIS-PROSAT"
+  },
+  {
+    "id": "coriolisRemocean",
+    "title": "coriolisRemocean — CORIOLIS-REMOCEAN"
+  },
+  {
+    "id": "coriolisRemoceanEq",
+    "title": "coriolisRemoceanEq — CORIOLIS-REMOCEAN EQ."
+  },
+  {
+    "id": "coriolisSpice",
+    "title": "coriolisSpice — CORIOLIS-SPICE"
+  },
+  {
+    "id": "coriolisTrack",
+    "title": "coriolisTrack — CORIOLIS-TRACK"
+  },
+  {
+    "id": "CORMPNC",
+    "title": "CORMPNC — CORMP-NC"
+  },
+  {
+    "id": "COSYNA",
+    "title": "COSYNA — Coastal Observing System for Northern and Arctic Seas"
+  },
+  {
+    "id": "CryoNet",
+    "title": "CryoNet"
+  },
+  {
+    "id": "CSIMB",
+    "title": "CSIMB — CSI-MB"
+  },
+  {
+    "id": "CTBTO",
+    "title": "CTBTO"
+  },
+  {
+    "id": "CW3ECDWR",
+    "title": "CW3ECDWR — CW3E-CDWR"
+  },
+  {
+    "id": "CYCOFOS",
+    "title": "CYCOFOS — Cyprus Coastal Ocean Forecasting and Observing System"
+  },
+  {
+    "id": "DBCPothers",
+    "title": "DBCPothers — DBCP others"
+  },
+  {
+    "id": "DEKOSIM",
+    "title": "DEKOSIM"
+  },
+  {
+    "id": "DFODB",
+    "title": "DFODB — DFO DB"
+  },
+  {
+    "id": "DFOGlider",
+    "title": "DFOGlider — Department of Fisheries and Oceans Canada Glider Program"
+  },
+  {
+    "id": "DFOUSVs",
+    "title": "DFOUSVs — DFO USVs"
+  },
+  {
+    "id": "DFOUVicGlider",
+    "title": "DFOUVicGlider — DFO/University of Victoria Glider program"
+  },
+  {
+    "id": "eAIMS",
+    "title": "eAIMS — E-AIMS"
+  },
+  {
+    "id": "EANET",
+    "title": "EANET"
+  },
+  {
+    "id": "EARLINET",
+    "title": "EARLINET"
+  },
+  {
+    "id": "eASAP",
+    "title": "eASAP — E-ASAP"
+  },
+  {
+    "id": "ECDB",
+    "title": "ECDB — EC DB"
+  },
+  {
+    "id": "ECIABP",
+    "title": "ECIABP — EC-IABP"
+  },
+  {
+    "id": "ECMB",
+    "title": "ECMB — EC MB"
+  },
+  {
+    "id": "EEAGlider",
+    "title": "EEAGlider — Extended Ellett Array"
+  },
+  {
+    "id": "EMEP",
+    "title": "EMEP"
+  },
+  {
+    "id": "ESRLCCG",
+    "title": "ESRLCCG"
+  },
+  {
+    "id": "eSurfmar",
+    "title": "eSurfmar — E-SURFMAR"
+  },
+  {
+    "id": "eSurfmarGDP",
+    "title": "eSurfmarGDP — E-SURFMAR GDP"
+  },
+  {
+    "id": "eSurfmarIrishIMI",
+    "title": "eSurfmarIrishIMI — E-SURFMAR-IRISH IMI"
+  },
+  {
+    "id": "eSurfmarNOAA",
+    "title": "eSurfmarNOAA — E-SURFMAR-NOAA"
+  },
+  {
+    "id": "eSurfmarUKFRMB",
+    "title": "eSurfmarUKFRMB — E-SURFMAR-UK/FR MB"
+  },
+  {
+    "id": "eSurfmarUKMB",
+    "title": "eSurfmarUKMB — E-SURFMAR-UK MB"
+  },
+  {
+    "id": "EUROARGO",
+    "title": "EUROARGO"
+  },
+  {
+    "id": "EuroARGORISE",
+    "title": "EuroARGORISE — Euro-Argo RISE"
+  },
+  {
+    "id": "euroSeaArgo",
+    "title": "euroSeaArgo — EuroSea Argo"
+  },
+  {
+    "id": "EurositesPlanier",
+    "title": "EurositesPlanier — EUROSITES PLANIER"
+  },
+  {
+    "id": "FERHRITSU",
+    "title": "FERHRITSU — FERHRI-TSU"
+  },
+  {
+    "id": "FMIGlider",
+    "title": "FMIGlider — FMI Glider Program"
+  },
+  {
+    "id": "FranceGlider",
+    "title": "FranceGlider — DTINSU international"
+  },
+  {
+    "id": "GALION",
+    "title": "GALION"
+  },
+  {
+    "id": "GAWglobal",
+    "title": "GAWglobal — GAW Global"
+  },
+  {
+    "id": "GAWlocal",
+    "title": "GAWlocal — GAW Local"
+  },
+  {
+    "id": "GAWnonAffiliated",
+    "title": "GAWnonAffiliated — Non-affiliated"
+  },
+  {
+    "id": "GAWPFR",
+    "title": "GAWPFR — GAW-PFR"
+  },
+  {
+    "id": "GAWregional",
+    "title": "GAWregional — GAW Regional"
+  },
+  {
+    "id": "GBON",
+    "title": "GBON"
+  },
+  {
+    "id": "GCWaffiliated",
+    "title": "GCWaffiliated — GCW affiliated station"
+  },
+  {
+    "id": "GCWcontributing",
+    "title": "GCWcontributing — GCW Contributing station"
+  },
+  {
+    "id": "GCWCryoNet",
+    "title": "GCWCryoNet — GCW CryoNet station"
+  },
+  {
+    "id": "GDP",
+    "title": "GDP — Global Drifter Program (GDP)"
+  },
+  {
+    "id": "GDPMF",
+    "title": "GDPMF"
+  },
+  {
+    "id": "GEOMARGlider",
+    "title": "GEOMARGlider — GEOMAR Glider program"
+  },
+  {
+    "id": "germanAODnetwork",
+    "title": "germanAODnetwork — German AOD network"
+  },
+  {
+    "id": "germanyMB",
+    "title": "germanyMB — GERMANY MB"
+  },
+  {
+    "id": "GINA",
+    "title": "GINA — Glider In The Agulhas"
+  },
+  {
+    "id": "GLOSCAL",
+    "title": "GLOSCAL"
+  },
+  {
+    "id": "GLOSSAO",
+    "title": "GLOSSAO — GLOSS AO"
+  },
+  {
+    "id": "GLOSSAR",
+    "title": "GLOSSAR — GLOSS AR"
+  },
+  {
+    "id": "GLOSSAU",
+    "title": "GLOSSAU — GLOSS AU"
+  },
+  {
+    "id": "GLOSSBD",
+    "title": "GLOSSBD — GLOSS BD"
+  },
+  {
+    "id": "GLOSSBR",
+    "title": "GLOSSBR — GLOSS BR"
+  },
+  {
+    "id": "GLOSSCA",
+    "title": "GLOSSCA — GLOSS CA"
+  },
+  {
+    "id": "GLOSSCG",
+    "title": "GLOSSCG — GLOSS CG"
+  },
+  {
+    "id": "GLOSSCI",
+    "title": "GLOSSCI — GLOSS CI"
+  },
+  {
+    "id": "GLOSSCL",
+    "title": "GLOSSCL — GLOSS CL"
+  },
+  {
+    "id": "GLOSSCM",
+    "title": "GLOSSCM — GLOSS CM"
+  },
+  {
+    "id": "GLOSSCN",
+    "title": "GLOSSCN — GLOSS CN"
+  },
+  {
+    "id": "GLOSSCO",
+    "title": "GLOSSCO — GLOSS CO"
+  },
+  {
+    "id": "GLOSSCR",
+    "title": "GLOSSCR — GLOSS CR"
+  },
+  {
+    "id": "GLOSSCU",
+    "title": "GLOSSCU — GLOSS CU"
+  },
+  {
+    "id": "GLOSSDE",
+    "title": "GLOSSDE — GLOSS DE"
+  },
+  {
+    "id": "GLOSSDJ",
+    "title": "GLOSSDJ — GLOSS DJ"
+  },
+  {
+    "id": "GLOSSDK",
+    "title": "GLOSSDK — GLOSS DK"
+  },
+  {
+    "id": "GLOSSEC",
+    "title": "GLOSSEC — GLOSS EC"
+  },
+  {
+    "id": "GLOSSEG",
+    "title": "GLOSSEG — GLOSS EG"
+  },
+  {
+    "id": "GLOSSES",
+    "title": "GLOSSES — GLOSS ES"
+  },
+  {
+    "id": "GLOSSFR",
+    "title": "GLOSSFR — GLOSS FR"
+  },
+  {
+    "id": "GLOSSGB",
+    "title": "GLOSSGB — GLOSS GB"
+  },
+  {
+    "id": "GLOSSGH",
+    "title": "GLOSSGH — GLOSS GH"
+  },
+  {
+    "id": "GLOSSGN",
+    "title": "GLOSSGN — GLOSS GN"
+  },
+  {
+    "id": "GLOSSHT",
+    "title": "GLOSSHT — GLOSS HT"
+  },
+  {
+    "id": "GLOSSID",
+    "title": "GLOSSID — GLOSS ID"
+  },
+  {
+    "id": "GLOSSIE",
+    "title": "GLOSSIE — GLOSS IE"
+  },
+  {
+    "id": "GLOSSIL",
+    "title": "GLOSSIL — GLOSS IL"
+  },
+  {
+    "id": "GLOSSIN",
+    "title": "GLOSSIN — GLOSS IN"
+  },
+  {
+    "id": "GLOSSIR",
+    "title": "GLOSSIR — GLOSS IR"
+  },
+  {
+    "id": "GLOSSIS",
+    "title": "GLOSSIS — GLOSS IS"
+  },
+  {
+    "id": "GLOSSJM",
+    "title": "GLOSSJM — GLOSS JM"
+  },
+  {
+    "id": "GLOSSJP",
+    "title": "GLOSSJP — GLOSS JP"
+  },
+  {
+    "id": "GLOSSKE",
+    "title": "GLOSSKE — GLOSS KE"
+  },
+  {
+    "id": "GLOSSKP",
+    "title": "GLOSSKP — GLOSS KP"
+  },
+  {
+    "id": "GLOSSKR",
+    "title": "GLOSSKR — GLOSS KR"
+  },
+  {
+    "id": "GLOSSLK",
+    "title": "GLOSSLK — GLOSS LK"
+  },
+  {
+    "id": "GLOSSMA",
+    "title": "GLOSSMA — GLOSS MA"
+  },
+  {
+    "id": "GLOSSMG",
+    "title": "GLOSSMG — GLOSS MG"
+  },
+  {
+    "id": "GLOSSMM",
+    "title": "GLOSSMM — GLOSS MM"
+  },
+  {
+    "id": "GLOSSMU",
+    "title": "GLOSSMU — GLOSS MU"
+  },
+  {
+    "id": "GLOSSMX",
+    "title": "GLOSSMX — GLOSS MX"
+  },
+  {
+    "id": "GLOSSMY",
+    "title": "GLOSSMY — GLOSS MY"
+  },
+  {
+    "id": "GLOSSMZ",
+    "title": "GLOSSMZ — GLOSS MZ"
+  },
+  {
+    "id": "GLOSSNA",
+    "title": "GLOSSNA — GLOSS NA"
+  },
+  {
+    "id": "GLOSSNG",
+    "title": "GLOSSNG — GLOSS NG"
+  },
+  {
+    "id": "GLOSSNO",
+    "title": "GLOSSNO — GLOSS NO"
+  },
+  {
+    "id": "GLOSSNZ",
+    "title": "GLOSSNZ — GLOSS NZ"
+  },
+  {
+    "id": "GLOSSOM",
+    "title": "GLOSSOM — GLOSS OM"
+  },
+  {
+    "id": "GLOSSPA",
+    "title": "GLOSSPA — GLOSS PA"
+  },
+  {
+    "id": "GLOSSPE",
+    "title": "GLOSSPE — GLOSS PE"
+  },
+  {
+    "id": "GLOSSPG",
+    "title": "GLOSSPG — GLOSS PG"
+  },
+  {
+    "id": "GLOSSPH",
+    "title": "GLOSSPH — GLOSS PH"
+  },
+  {
+    "id": "GLOSSPK",
+    "title": "GLOSSPK — GLOSS PK"
+  },
+  {
+    "id": "GLOSSPT",
+    "title": "GLOSSPT — GLOSS PT"
+  },
+  {
+    "id": "GLOSSRU",
+    "title": "GLOSSRU — GLOSS RU"
+  },
+  {
+    "id": "GLOSSSC",
+    "title": "GLOSSSC — GLOSS SC"
+  },
+  {
+    "id": "GLOSSSE",
+    "title": "GLOSSSE — GLOSS SE"
+  },
+  {
+    "id": "GLOSSSG",
+    "title": "GLOSSSG — GLOSS SG"
+  },
+  {
+    "id": "GLOSSSN",
+    "title": "GLOSSSN — GLOSS SN"
+  },
+  {
+    "id": "GLOSSSO",
+    "title": "GLOSSSO — GLOSS SO"
+  },
+  {
+    "id": "GLOSSSV",
+    "title": "GLOSSSV — GLOSS SV"
+  },
+  {
+    "id": "GLOSSTH",
+    "title": "GLOSSTH — GLOSS TH"
+  },
+  {
+    "id": "GLOSSTT",
+    "title": "GLOSSTT — GLOSS TT"
+  },
+  {
+    "id": "GLOSSTZ",
+    "title": "GLOSSTZ — GLOSS TZ"
+  },
+  {
+    "id": "GLOSSUS",
+    "title": "GLOSSUS — GLOSS US"
+  },
+  {
+    "id": "GLOSSUY",
+    "title": "GLOSSUY — GLOSS UY"
+  },
+  {
+    "id": "GLOSSVE",
+    "title": "GLOSSVE — GLOSS VE"
+  },
+  {
+    "id": "GLOSSVN",
+    "title": "GLOSSVN — GLOSS VN"
+  },
+  {
+    "id": "GLOSSVU",
+    "title": "GLOSSVU — GLOSS VU"
+  },
+  {
+    "id": "GLOSSYE",
+    "title": "GLOSSYE — GLOSS YE"
+  },
+  {
+    "id": "GLOSSZA",
+    "title": "GLOSSZA — GLOSS ZA"
+  },
+  {
+    "id": "GNSSradioOccultation",
+    "title": "GNSSradioOccultation — GNSS radio-occultation system"
+  },
+  {
+    "id": "GOMIX",
+    "title": "GOMIX"
+  },
+  {
+    "id": "GOMOGlider",
+    "title": "GOMOGlider — Global Ocean Monitoring and Observing Program - Glider"
+  },
+  {
+    "id": "GOSGeneral",
+    "title": "GOSGeneral — GOS General"
+  },
+  {
+    "id": "GOship",
+    "title": "GOship — GO-SHIP"
+  },
+  {
+    "id": "GreatLakeGlider",
+    "title": "GreatLakeGlider — Great Lakes Observing System Glider Program"
+  },
+  {
+    "id": "greeceMB",
+    "title": "greeceMB — GREECE MB"
+  },
+  {
+    "id": "GRUAN",
+    "title": "GRUAN"
+  },
+  {
+    "id": "GSN",
+    "title": "GSN"
+  },
+  {
+    "id": "GSRN",
+    "title": "GSRN"
+  },
+  {
+    "id": "GTOS",
+    "title": "GTOS"
+  },
+  {
+    "id": "GUAN",
+    "title": "GUAN"
+  },
+  {
+    "id": "gyroscope",
+    "title": "gyroscope — GYROSCOPE"
+  },
+  {
+    "id": "HCMRGlider",
+    "title": "HCMRGlider — HCMR glider program"
+  },
+  {
+    "id": "HKOBSDB",
+    "title": "HKOBSDB — HK-OBS-DB"
+  },
+  {
+    "id": "HurricaneGlider",
+    "title": "HurricaneGlider — NOAA Glider Hurricane Program"
+  },
+  {
+    "id": "HZGGlider",
+    "title": "HZGGlider — HZG glider program"
+  },
+  {
+    "id": "IABP",
+    "title": "IABP"
+  },
+  {
+    "id": "IABPcanada",
+    "title": "IABPcanada — IABP CANADA"
+  },
+  {
+    "id": "IABPEC",
+    "title": "IABPEC — IABP-EC"
+  },
+  {
+    "id": "IABPNIC",
+    "title": "IABPNIC — IABP NIC"
+  },
+  {
+    "id": "IABPUS",
+    "title": "IABPUS — IABP US"
+  },
+  {
+    "id": "IABPUW",
+    "title": "IABPUW — IABP-UW"
+  },
+  {
+    "id": "IAGOS",
+    "title": "IAGOS"
+  },
+  {
+    "id": "IBPIO",
+    "title": "IBPIO"
+  },
+  {
+    "id": "ICOS",
+    "title": "ICOS"
+  },
+  {
+    "id": "IDAF",
+    "title": "IDAF"
+  },
+  {
+    "id": "ILBD",
+    "title": "ILBD — IL-DB"
+  },
+  {
+    "id": "ILMB",
+    "title": "ILMB — IL-MB"
+  },
+  {
+    "id": "IMARPEglider",
+    "title": "IMARPEglider — IMARPE Glider Program"
+  },
+  {
+    "id": "IMOSCoastalWB",
+    "title": "IMOSCoastalWB — IMOS coastal wave buoys"
+  },
+  {
+    "id": "IMOSGlider",
+    "title": "IMOSGlider — Integrated Marine Observing System - Glider"
+  },
+  {
+    "id": "IMPROVE",
+    "title": "IMPROVE"
+  },
+  {
+    "id": "INCOISTSU",
+    "title": "INCOISTSU — INCOIS-TSU"
+  },
+  {
+    "id": "INDAAF",
+    "title": "INDAAF"
+  },
+  {
+    "id": "INDIANIO",
+    "title": "INDIANIO — INDIA NIO"
+  },
+  {
+    "id": "indiaNIOT",
+    "title": "indiaNIOT — INDIA-NIOT"
+  },
+  {
+    "id": "indiaNIOTSU",
+    "title": "indiaNIOTSU — INDIA NIO-TSU"
+  },
+  {
+    "id": "INOCARTSU",
+    "title": "INOCARTSU — INOCAR-TSU"
+  },
+  {
+    "id": "INTAROSGlider",
+    "title": "INTAROSGlider — INTAROS french glider program"
+  },
+  {
+    "id": "IPABUS",
+    "title": "IPABUS"
+  },
+  {
+    "id": "irishGlider",
+    "title": "irishGlider — Irish sustained glider deployment"
+  },
+  {
+    "id": "ISMARGlider",
+    "title": "ISMARGlider — CNR Ismar Glider Program"
+  },
+  {
+    "id": "IsraelGlider",
+    "title": "IsraelGlider — Israeli National Monitoring"
+  },
+  {
+    "id": "italyDB",
+    "title": "italyDB — ITALY DB"
+  },
+  {
+    "id": "italyOGS",
+    "title": "italyOGS — ITALY-OGS"
+  },
+  {
+    "id": "ITPdamocles",
+    "title": "ITPdamocles — ITP-DAMOCLES"
+  },
+  {
+    "id": "ITPWHOI",
+    "title": "ITPWHOI — ITP-WHOI"
+  },
+  {
+    "id": "JAMSTECDB",
+    "title": "JAMSTECDB"
+  },
+  {
+    "id": "JAMSTECMB",
+    "title": "JAMSTECMB — JAMSTEC-MB"
+  },
+  {
+    "id": "JMADB",
+    "title": "JMADB — JMA DB"
+  },
+  {
+    "id": "JMATSU",
+    "title": "JMATSU — JMA-TSU"
+  },
+  {
+    "id": "KIOSTGlider",
+    "title": "KIOSTGlider — KIOST glider program"
+  },
+  {
+    "id": "KMAMB",
+    "title": "KMAMB — KMA MB"
+  },
+  {
+    "id": "KUDB",
+    "title": "KUDB — KU DB"
+  },
+  {
+    "id": "KUGON",
+    "title": "KUGON — Korea Underwater Glider Observing Network"
+  },
+  {
+    "id": "LALINET",
+    "title": "LALINET"
+  },
+  {
+    "id": "LargeLakeGlider",
+    "title": "LargeLakeGlider — Large Lakes Observatory Glider Program"
+  },
+  {
+    "id": "lightningDetection",
+    "title": "lightningDetection — Lightning detection system"
+  },
+  {
+    "id": "LOCEAN",
+    "title": "LOCEAN"
+  },
+  {
+    "id": "LTERGlider",
+    "title": "LTERGlider — NSF Long Term Ecological Research"
+  },
+  {
+    "id": "MAGIC",
+    "title": "MAGIC — Mid Atlantic Glider Initiative and Collaboration"
+  },
+  {
+    "id": "marlinDB",
+    "title": "marlinDB — MARLIN-DB"
+  },
+  {
+    "id": "MARSGlider",
+    "title": "MARSGlider — Marine Autonomous and Robotic Systems"
+  },
+  {
+    "id": "MBARIGlider",
+    "title": "MBARIGlider — MBARI glider program"
+  },
+  {
+    "id": "MEDARGO",
+    "title": "MEDARGO"
+  },
+  {
+    "id": "meridianGoodHope",
+    "title": "meridianGoodHope — MERIDIAN GOODHOPE"
+  },
+  {
+    "id": "MERSEA",
+    "title": "MERSEA"
+  },
+  {
+    "id": "MeteoFranceDB",
+    "title": "MeteoFranceDB — METEO FRANCE DB"
+  },
+  {
+    "id": "MeteoFranceMB",
+    "title": "MeteoFranceMB — METEO FRANCE MB"
+  },
+  {
+    "id": "MeteoFranceWB",
+    "title": "MeteoFranceWB — METEO FRANCE WB"
+  },
+  {
+    "id": "MIGlider",
+    "title": "MIGlider — Marine Institute Glider Program"
+  },
+  {
+    "id": "MOCCAEU",
+    "title": "MOCCAEU — MOCCA-EU"
+  },
+  {
+    "id": "MOCCAGER",
+    "title": "MOCCAGER — MOCCA-GER"
+  },
+  {
+    "id": "MOCCAIT",
+    "title": "MOCCAIT — MOCCA-IT"
+  },
+  {
+    "id": "MOCCANETH",
+    "title": "MOCCANETH — MOCCA-NETH"
+  },
+  {
+    "id": "MOCCAPOL",
+    "title": "MOCCAPOL — MOCCA-POL"
+  },
+  {
+    "id": "MOOSEnvironment",
+    "title": "MOOSEnvironment — Mediterranean Ocean Observing System for the Environment"
+  },
+  {
+    "id": "MPLNET",
+    "title": "MPLNET"
+  },
+  {
+    "id": "MUNGlider",
+    "title": "MUNGlider — Memorial University of Newfoundland Glider program"
+  },
+  {
+    "id": "NADP",
+    "title": "NADP"
+  },
+  {
+    "id": "NansenLegacyGlider",
+    "title": "NansenLegacyGlider — NorGliders - Nansen Legacy"
+  },
+  {
+    "id": "NAOSCanada",
+    "title": "NAOSCanada — NAOS-Canada"
+  },
+  {
+    "id": "NAOSfrance",
+    "title": "NAOSfrance — NAOS-FRANCE"
+  },
+  {
+    "id": "NATOGlider",
+    "title": "NATOGlider — Scientific NATO glider experiment"
+  },
+  {
+    "id": "NavoceanGlider",
+    "title": "NavoceanGlider — US NAVY glider program"
+  },
+  {
+    "id": "NAVOCEANODBCP",
+    "title": "NAVOCEANODBCP — Navoceano DBCP"
+  },
+  {
+    "id": "NCCOOS",
+    "title": "NCCOOS"
+  },
+  {
+    "id": "NCSUglider",
+    "title": "NCSUglider — NCSU Ocean Observing and Modeling Group Glider Program"
+  },
+  {
+    "id": "NDACC",
+    "title": "NDACC"
+  },
+  {
+    "id": "NDBCBP",
+    "title": "NDBCBP — NDBC-BP"
+  },
+  {
+    "id": "NDBCCOE",
+    "title": "NDBCCOE — NDBC-COE"
+  },
+  {
+    "id": "NDBCCSI",
+    "title": "NDBCCSI — NDBC-CSI"
+  },
+  {
+    "id": "NDBCMB",
+    "title": "NDBCMB — NDBC-MB"
+  },
+  {
+    "id": "NDBCMBARI",
+    "title": "NDBCMBARI — NDBC-MBARI"
+  },
+  {
+    "id": "NDBCNASA",
+    "title": "NDBCNASA — NDBC-NASA"
+  },
+  {
+    "id": "NDBCNOAANWS",
+    "title": "NDBCNOAANWS — NDBC-NOAA-NWS"
+  },
+  {
+    "id": "NDBCTABS",
+    "title": "NDBCTABS — NDBC-TABS"
+  },
+  {
+    "id": "NDBCTSU",
+    "title": "NDBCTSU — NDBC-TSU"
+  },
+  {
+    "id": "NDBCUSCG",
+    "title": "NDBCUSCG — NDBC-USCG"
+  },
+  {
+    "id": "NDWCTSU",
+    "title": "NDWCTSU — NDWC-TSU"
+  },
+  {
+    "id": "NERACOOSMB",
+    "title": "NERACOOSMB — NERACOOS-MB"
+  },
+  {
+    "id": "NewZealandDB",
+    "title": "NewZealandDB — NEW ZEALAND DB"
+  },
+  {
+    "id": "NICIABP",
+    "title": "NICIABP — NIC-IABP"
+  },
+  {
+    "id": "NIWAGlider",
+    "title": "NIWAGlider — NIWA Glider Program"
+  },
+  {
+    "id": "NOAACBIBS",
+    "title": "NOAACBIBS — NOAA-CBIBS"
+  },
+  {
+    "id": "NOAAGML",
+    "title": "NOAAGML — NOAA-GML"
+  },
+  {
+    "id": "NOAAOAPglider",
+    "title": "NOAAOAPglider — NOAA Ocean Acidification Program"
+  },
+  {
+    "id": "NOCLGlider",
+    "title": "NOCLGlider — NOC Liverpool Glider Program"
+  },
+  {
+    "id": "nonAffiliated",
+    "title": "nonAffiliated — Non-affiliated"
+  },
+  {
+    "id": "NorEMSOGlider",
+    "title": "NorEMSOGlider — NorGlider - NorEMSO"
+  },
+  {
+    "id": "NorwayGlider",
+    "title": "NorwayGlider — NorGliders - other"
+  },
+  {
+    "id": "NorwayIMR",
+    "title": "NorwayIMR — NORWAY-IMR"
+  },
+  {
+    "id": "NWSNDBCMB",
+    "title": "NWSNDBCMB — NWS-NDBC-MB"
+  },
+  {
+    "id": "NWSNDBCWB",
+    "title": "NWSNDBCWB — NWS-NDBC-WB"
+  },
+  {
+    "id": "NZTSU",
+    "title": "NZTSU — NZ-TSU"
+  },
+  {
+    "id": "ODYSSEAGlider",
+    "title": "ODYSSEAGlider — ODYSSEA H2020 Glider program"
+  },
+  {
+    "id": "OGSGlider",
+    "title": "OGSGlider — OGS glider program"
+  },
+  {
+    "id": "OOICGSNGlider",
+    "title": "OOICGSNGlider — OOI - Coastal and Global Scale Nodes"
+  },
+  {
+    "id": "OOIEnduranceGlider",
+    "title": "OOIEnduranceGlider — OOI - Coastal Endurance Array"
+  },
+  {
+    "id": "OOIMB",
+    "title": "OOIMB — OOI-MB"
+  },
+  {
+    "id": "OSAWI",
+    "title": "OSAWI — OS-AWI"
+  },
+  {
+    "id": "OSBAS",
+    "title": "OSBAS — OS-BAS"
+  },
+  {
+    "id": "OSBCCR",
+    "title": "OSBCCR — OS-BCCR"
+  },
+  {
+    "id": "OSBIOS",
+    "title": "OSBIOS — OS-BIOS"
+  },
+  {
+    "id": "OSCNR",
+    "title": "OSCNR — OS-CNR"
+  },
+  {
+    "id": "OSCNRISMAR",
+    "title": "OSCNRISMAR — OS-CNR-ISMAR"
+  },
+  {
+    "id": "OSCNRS",
+    "title": "OSCNRS — OS-CNRS"
+  },
+  {
+    "id": "OSCOM",
+    "title": "OSCOM — OS-CENTRE D'OCEANOLOGIE DE MARSEILLE"
+  },
+  {
+    "id": "OSCSIRO",
+    "title": "OSCSIRO — OS-CSIRO"
+  },
+  {
+    "id": "OSDFO",
+    "title": "OSDFO — OS-DFO"
+  },
+  {
+    "id": "OSDML",
+    "title": "OSDML — OS-DML"
+  },
+  {
+    "id": "OSEUTHOR",
+    "title": "OSEUTHOR — OS-EU-THOR"
+  },
+  {
+    "id": "OSFSC",
+    "title": "OSFSC — OS-FSC"
+  },
+  {
+    "id": "OSGEOMAR",
+    "title": "OSGEOMAR — OS-GEOMAR"
+  },
+  {
+    "id": "OShamburgUniversity",
+    "title": "OShamburgUniversity — OS-HAMBURG UNIVERSITY"
+  },
+  {
+    "id": "OSHAV",
+    "title": "OSHAV — OS-HAV"
+  },
+  {
+    "id": "OSHCMR",
+    "title": "OSHCMR — OS-HELLENIC CENTRE FOR MARINE RESEARCH"
+  },
+  {
+    "id": "OSICCMCanarias",
+    "title": "OSICCMCanarias — OS-ICCM - ACIISI - GOBIERNO DE CANARIAS"
+  },
+  {
+    "id": "OSIceland",
+    "title": "OSIceland — OS-ICELAND"
+  },
+  {
+    "id": "OSIEO",
+    "title": "OSIEO — OS-IEO"
+  },
+  {
+    "id": "OSIFREMER",
+    "title": "OSIFREMER — OS-IFREMER"
+  },
+  {
+    "id": "OSIMARPE",
+    "title": "OSIMARPE — OS-IMARPE"
+  },
+  {
+    "id": "OSIMR",
+    "title": "OSIMR — OS-INSTITUTE OF MARINE RESEARCH"
+  },
+  {
+    "id": "OSIONTU",
+    "title": "OSIONTU — OS-IO-NTU"
+  },
+  {
+    "id": "OSIOwarnemuende",
+    "title": "OSIOwarnemuende — OS-IO-WARNEMUENDE"
+  },
+  {
+    "id": "OSIRD",
+    "title": "OSIRD — OS-IRD"
+  },
+  {
+    "id": "OSJAMSTEC",
+    "title": "OSJAMSTEC — OS-JAMSTEC"
+  },
+  {
+    "id": "OSJMAJAMSTEC",
+    "title": "OSJMAJAMSTEC — OS-JMA/JAMSTEC"
+  },
+  {
+    "id": "OSKIOST",
+    "title": "OSKIOST — OS-KIOST"
+  },
+  {
+    "id": "OSKNMI",
+    "title": "OSKNMI — OS-KNMI"
+  },
+  {
+    "id": "OSKORSPilot",
+    "title": "OSKORSPilot — OS-KORS Pilot"
+  },
+  {
+    "id": "OSLDEO",
+    "title": "OSLDEO — OS-LDEO"
+  },
+  {
+    "id": "OSMARUM",
+    "title": "OSMARUM — OS-MARUM"
+  },
+  {
+    "id": "OSMBARI",
+    "title": "OSMBARI — OS-MBARI"
+  },
+  {
+    "id": "OSMBL",
+    "title": "OSMBL — OS-MBL"
+  },
+  {
+    "id": "OSMNR",
+    "title": "OSMNR — OS-MNR"
+  },
+  {
+    "id": "OSMSS",
+    "title": "OSMSS — OS-MSS"
+  },
+  {
+    "id": "OSNAPGlider",
+    "title": "OSNAPGlider — Overturning in the Subpolar North Atlantic Program"
+  },
+  {
+    "id": "OSNERSC",
+    "title": "OSNERSC — OS-NERSC"
+  },
+  {
+    "id": "OSNIO",
+    "title": "OSNIO — OS-NIO"
+  },
+  {
+    "id": "OSNIOT",
+    "title": "OSNIOT — OS-NIOT"
+  },
+  {
+    "id": "OSNIOZ",
+    "title": "OSNIOZ — OS-ROYAL NETHERLANDS INSTITUTE FOR SEA RESEARCH (NIOZ)"
+  },
+  {
+    "id": "OSNIWA",
+    "title": "OSNIWA — OS-NIWA"
+  },
+  {
+    "id": "OSNOAA",
+    "title": "OSNOAA — OS-NOAA"
+  },
+  {
+    "id": "OSNOAA-AOML",
+    "title": "OSNOAA-AOML — OS-NOAA/AOML"
+  },
+  {
+    "id": "OSNOAA-PMEL",
+    "title": "OSNOAA-PMEL — OS-NOAA/PMEL"
+  },
+  {
+    "id": "OSNOAANDBC",
+    "title": "OSNOAANDBC — OS-NOAA/NDBC"
+  },
+  {
+    "id": "OSNOC",
+    "title": "OSNOC — OS-NOC"
+  },
+  {
+    "id": "OSOCEANOR",
+    "title": "OSOCEANOR — OS-OCEANOR"
+  },
+  {
+    "id": "OSOGS",
+    "title": "OSOGS — OS-OGS"
+  },
+  {
+    "id": "OSSAM",
+    "title": "OSSAM — OS-SAM"
+  },
+  {
+    "id": "OSSAMSDML",
+    "title": "OSSAMSDML — OS-SAMS_DML"
+  },
+  {
+    "id": "OSSIO",
+    "title": "OSSIO — OS-SIO"
+  },
+  {
+    "id": "OSSNU",
+    "title": "OSSNU — OS-SNU"
+  },
+  {
+    "id": "OSSOA",
+    "title": "OSSOA — OS-SOA"
+  },
+  {
+    "id": "OSUDB",
+    "title": "OSUDB — OSU DB"
+  },
+  {
+    "id": "OSUNhawaiiManoa",
+    "title": "OSUNhawaiiManoa — OS-UN_HAWAII_MANOA"
+  },
+  {
+    "id": "OSUNmiami",
+    "title": "OSUNmiami — OS-UN_MIAMI"
+  },
+  {
+    "id": "OSUSP",
+    "title": "OSUSP — OS-USP"
+  },
+  {
+    "id": "OSUTokyo",
+    "title": "OSUTokyo — OS-UTokyo"
+  },
+  {
+    "id": "OSUW",
+    "title": "OSUW — OS-UW"
+  },
+  {
+    "id": "OSWHOI",
+    "title": "OSWHOI — OS-WHOI"
+  },
+  {
+    "id": "OSWHOI-SIO-OSU",
+    "title": "OSWHOI-SIO-OSU — OS-WHOI/SIO/OSU"
+  },
+  {
+    "id": "OVENSGlider",
+    "title": "OVENSGlider — NorGliders - OVENS"
+  },
+  {
+    "id": "pacIOOS",
+    "title": "pacIOOS — PACIOOS"
+  },
+  {
+    "id": "peruMB",
+    "title": "peruMB — Peru-MB"
+  },
+  {
+    "id": "petrobras",
+    "title": "petrobras — PETROBRAS"
+  },
+  {
+    "id": "PHOTONS",
+    "title": "PHOTONS"
+  },
+  {
+    "id": "PLOCANGlider",
+    "title": "PLOCANGlider — Macaronesian Marine and Maritime Observation Network"
+  },
+  {
+    "id": "PMELMB",
+    "title": "PMELMB — PMEL MB"
+  },
+  {
+    "id": "polarAOD",
+    "title": "polarAOD — PolarAOD"
+  },
+  {
+    "id": "PolarGlider",
+    "title": "PolarGlider — Polar Glider"
+  },
+  {
+    "id": "PortugalMB",
+    "title": "PortugalMB — PORTUGAL-MB"
+  },
+  {
+    "id": "projetoAzul",
+    "title": "projetoAzul — Projeto Azul"
+  },
+  {
+    "id": "ProVoLoGlider",
+    "title": "ProVoLoGlider — NorGliders - ProVoLo"
+  },
+  {
+    "id": "RAEONGlider",
+    "title": "RAEONGlider — Real-Time Aquatic Ecosystem Observation Network Glider program"
+  },
+  {
+    "id": "RBCN",
+    "title": "RBCN"
+  },
+  {
+    "id": "RBON",
+    "title": "RBON"
+  },
+  {
+    "id": "RBONpilot",
+    "title": "RBONpilot — RBON-Pilot Project"
+  },
+  {
+    "id": "RBSN",
+    "title": "RBSN"
+  },
+  {
+    "id": "RBSNp",
+    "title": "RBSNp — RBSN(P)"
+  },
+  {
+    "id": "RBSNs",
+    "title": "RBSNs — RBSN(S)"
+  },
+  {
+    "id": "RBSNsp",
+    "title": "RBSNsp — RBSN(SP)"
+  },
+  {
+    "id": "RBSNst",
+    "title": "RBSNst — RBSN(ST)"
+  },
+  {
+    "id": "RBSNt",
+    "title": "RBSNt — RBSN(T)"
+  },
+  {
+    "id": "REFINE",
+    "title": "REFINE"
+  },
+  {
+    "id": "RUCOOLColResGlider",
+    "title": "RUCOOLColResGlider — RUCOOL - Collaborative Reasearch"
+  },
+  {
+    "id": "RUCOOLGlider",
+    "title": "RUCOOLGlider — Rutgers Center for Ocean Observing Leadership Glider Program"
+  },
+  {
+    "id": "saildrone",
+    "title": "saildrone — SAILDRONE"
+  },
+  {
+    "id": "SASDB",
+    "title": "SASDB — SAS-DB"
+  },
+  {
+    "id": "SAWSDB",
+    "title": "SAWSDB — SAWS DB"
+  },
+  {
+    "id": "SBUMB",
+    "title": "SBUMB — SBU-MB"
+  },
+  {
+    "id": "SCALE",
+    "title": "SCALE — SCALE glider program"
+  },
+  {
+    "id": "scripps",
+    "title": "scripps — SCRIPPS"
+  },
+  {
+    "id": "ScrippsGlider",
+    "title": "ScrippsGlider — Scripps Glider Program"
+  },
+  {
+    "id": "SHADOZ",
+    "title": "SHADOZ"
+  },
+  {
+    "id": "shell",
+    "title": "shell — SHELL"
+  },
+  {
+    "id": "shoaTSU",
+    "title": "shoaTSU — SHOA-TSU"
+  },
+  {
+    "id": "sibRad",
+    "title": "sibRad — SibRad"
+  },
+  {
+    "id": "SIODB",
+    "title": "SIODB — SIO-DB"
+  },
+  {
+    "id": "SIOSGlider",
+    "title": "SIOSGlider — NorGliders - SIOS"
+  },
+  {
+    "id": "SKIOGlider",
+    "title": "SKIOGlider — SKIO Glider Program"
+  },
+  {
+    "id": "skynet",
+    "title": "skynet — SKYNET"
+  },
+  {
+    "id": "SOCIBDB",
+    "title": "SOCIBDB — SOCIB-DB"
+  },
+  {
+    "id": "SOCIBGDP",
+    "title": "SOCIBGDP — SOCIB-GDP"
+  },
+  {
+    "id": "SOCIBGlider",
+    "title": "SOCIBGlider — Balearic Islands Observatory"
+  },
+  {
+    "id": "soclim",
+    "title": "soclim — SOCLIM"
+  },
+  {
+    "id": "SOOP",
+    "title": "SOOP"
+  },
+  {
+    "id": "SOOPAOMLTSG",
+    "title": "SOOPAOMLTSG — SOOP-AOML-TSG"
+  },
+  {
+    "id": "SOOPBOM",
+    "title": "SOOPBOM — SOOP-BOM"
+  },
+  {
+    "id": "SOOPFPVRECOPESCA",
+    "title": "SOOPFPVRECOPESCA — SOOP-FVP-RECOPESCA"
+  },
+  {
+    "id": "SOOPFVPBDC",
+    "title": "SOOPFVPBDC — SOOP-FVP-BDC"
+  },
+  {
+    "id": "SOOPFVPCatchingData",
+    "title": "SOOPFVPCatchingData — SOOP-FVP-Catching Data"
+  },
+  {
+    "id": "SOOPFVPODN",
+    "title": "SOOPFVPODN — SOOP-FVP-ODN"
+  },
+  {
+    "id": "SOOPFVPVistools",
+    "title": "SOOPFVPVistools — SOOP-FVP-Vistools"
+  },
+  {
+    "id": "SOOPIFREMERTSG",
+    "title": "SOOPIFREMERTSG — SOOP-IFREMER-TSG"
+  },
+  {
+    "id": "SOOPIRDTSG",
+    "title": "SOOPIRDTSG — SOOP-IRD-TSG"
+  },
+  {
+    "id": "SOOPIRDXBT",
+    "title": "SOOPIRDXBT — SOOP-IRD-XBT"
+  },
+  {
+    "id": "SOSCEX",
+    "title": "SOSCEX — SOSCEx glider program"
+  },
+  {
+    "id": "SpainIEOMB",
+    "title": "SpainIEOMB — SPAIN-IEO-MB"
+  },
+  {
+    "id": "spainPDEMB",
+    "title": "spainPDEMB — SPAIN-PDE MB"
+  },
+  {
+    "id": "StonyBrookGlider",
+    "title": "StonyBrookGlider — Stony Brook Glider Program"
+  },
+  {
+    "id": "stratus",
+    "title": "stratus — STRATUS"
+  },
+  {
+    "id": "TAMDAR",
+    "title": "TAMDAR"
+  },
+  {
+    "id": "TAMUMB",
+    "title": "TAMUMB — TAMU-MB"
+  },
+  {
+    "id": "taoAtlas",
+    "title": "taoAtlas — TAO ATLAS"
+  },
+  {
+    "id": "taoPirata",
+    "title": "taoPirata — TAO PIRATA"
+  },
+  {
+    "id": "taoPirataUS",
+    "title": "taoPirataUS — TAO PIRATA US"
+  },
+  {
+    "id": "taoRamaUSindia",
+    "title": "taoRamaUSindia — TAO RAMA US-INDIA"
+  },
+  {
+    "id": "taoTriton",
+    "title": "taoTriton — TAO TRITON"
+  },
+  {
+    "id": "TCCON",
+    "title": "TCCON"
+  },
+  {
+    "id": "texasUniversityGlider",
+    "title": "texasUniversityGlider — Texas University Glider Program"
+  },
+  {
+    "id": "TGGM",
+    "title": "TGGM — TG GM"
+  },
+  {
+    "id": "TTUGlider",
+    "title": "TTUGlider — Tallin University Glider Program"
+  },
+  {
+    "id": "UBODB",
+    "title": "UBODB — UBO DB"
+  },
+  {
+    "id": "UConnecticutglider",
+    "title": "UConnecticutglider — University of Connectuct Glider Program"
+  },
+  {
+    "id": "UCSDscripps",
+    "title": "UCSDscripps — UCSD-SCRIPPS"
+  },
+  {
+    "id": "Udelawareglider",
+    "title": "Udelawareglider — University of Delaware Glider Program"
+  },
+  {
+    "id": "UEAGlider",
+    "title": "UEAGlider — University of East Anglia Glider Program"
+  },
+  {
+    "id": "Ugotebordglider",
+    "title": "Ugotebordglider — University of Gšteborg Glider Program"
+  },
+  {
+    "id": "UKjerseyMB",
+    "title": "UKjerseyMB — UK-JERSEY MB"
+  },
+  {
+    "id": "UKMODB",
+    "title": "UKMODB — UK-MO DB"
+  },
+  {
+    "id": "UKMOfixed",
+    "title": "UKMOfixed — UK-MO FIXED"
+  },
+  {
+    "id": "UKMOLV",
+    "title": "UKMOLV — UK-MO LV"
+  },
+  {
+    "id": "UKMOMB",
+    "title": "UKMOMB — UK-MO MB"
+  },
+  {
+    "id": "Umaineglider",
+    "title": "Umaineglider — University of Main Glider Program"
+  },
+  {
+    "id": "UMasGlider",
+    "title": "UMasGlider — University of Massachussetts Dartmouth Glider Program"
+  },
+  {
+    "id": "UNHMB",
+    "title": "UNHMB — UNH-MB"
+  },
+  {
+    "id": "UnivLasPalmasGlider",
+    "title": "UnivLasPalmasGlider — Univ las Palmas glider program"
+  },
+  {
+    "id": "unknown",
+    "title": "unknown"
+  },
+  {
+    "id": "USACE",
+    "title": "USACE"
+  },
+  {
+    "id": "USAMLRPGlider",
+    "title": "USAMLRPGlider — U.S. Antarctic Marine Living Resources Program"
+  },
+  {
+    "id": "USCGDB",
+    "title": "USCGDB — US-CG DB"
+  },
+  {
+    "id": "USEPAGLGlider",
+    "title": "USEPAGLGlider — US EPA Great Lakes National Program"
+  },
+  {
+    "id": "USFGlider",
+    "title": "USFGlider — University of South Florida Glider Program"
+  },
+  {
+    "id": "USMGlider",
+    "title": "USMGlider — USM Glider Program"
+  },
+  {
+    "id": "UWAPLglider",
+    "title": "UWAPLglider — University of Washington Applied Physics Laboratory Glider Program"
+  },
+  {
+    "id": "UWURIglider",
+    "title": "UWURIglider — UW-URI Glider Program"
+  },
+  {
+    "id": "VIMGlider",
+    "title": "VIMGlider — Virginia Institute of Marine Science Glider Program"
+  },
+  {
+    "id": "VOS3P",
+    "title": "VOS3P — VOS-3P"
+  },
+  {
+    "id": "VOSAR",
+    "title": "VOSAR — VOS-AR"
+  },
+  {
+    "id": "VOSAU",
+    "title": "VOSAU — VOS-AU"
+  },
+  {
+    "id": "VOSCA",
+    "title": "VOSCA — VOS-CA"
+  },
+  {
+    "id": "VOSCL",
+    "title": "VOSCL — VOS-CL"
+  },
+  {
+    "id": "VOSCO",
+    "title": "VOSCO — VOS-CO"
+  },
+  {
+    "id": "VOSDE",
+    "title": "VOSDE — VOS-DE"
+  },
+  {
+    "id": "VOSDK",
+    "title": "VOSDK — VOS-DK"
+  },
+  {
+    "id": "VOSES",
+    "title": "VOSES — VOS-ES"
+  },
+  {
+    "id": "VOSEU",
+    "title": "VOSEU — VOS-EU"
+  },
+  {
+    "id": "VOSFR",
+    "title": "VOSFR — VOS-FR"
+  },
+  {
+    "id": "VOSGB",
+    "title": "VOSGB — VOS-GB"
+  },
+  {
+    "id": "VOSGR",
+    "title": "VOSGR — VOS-GR"
+  },
+  {
+    "id": "VOSHK",
+    "title": "VOSHK — VOS-HK"
+  },
+  {
+    "id": "VOSIE",
+    "title": "VOSIE — VOS-IE"
+  },
+  {
+    "id": "VOSIL",
+    "title": "VOSIL — VOS-IL"
+  },
+  {
+    "id": "VOSIN",
+    "title": "VOSIN — VOS-IN"
+  },
+  {
+    "id": "VOSIR",
+    "title": "VOSIR — VOS-IR"
+  },
+  {
+    "id": "VOSIS",
+    "title": "VOSIS — VOS-IS"
+  },
+  {
+    "id": "VOSJP",
+    "title": "VOSJP — VOS-JP"
+  },
+  {
+    "id": "VOSKR",
+    "title": "VOSKR — VOS-KR"
+  },
+  {
+    "id": "VOSMAERSK",
+    "title": "VOSMAERSK — VOS-MAERSK"
+  },
+  {
+    "id": "VOSMY",
+    "title": "VOSMY — VOS-MY"
+  },
+  {
+    "id": "VOSNL",
+    "title": "VOSNL — VOS-NL"
+  },
+  {
+    "id": "VOSNO",
+    "title": "VOSNO — VOS-NO"
+  },
+  {
+    "id": "VOSNZ",
+    "title": "VOSNZ — VOS-NZ"
+  },
+  {
+    "id": "VOSPL",
+    "title": "VOSPL — VOS-PL"
+  },
+  {
+    "id": "VOSRU",
+    "title": "VOSRU — VOS-RU"
+  },
+  {
+    "id": "VOSSE",
+    "title": "VOSSE — VOS-SE"
+  },
+  {
+    "id": "VOSSHIPMASK",
+    "title": "VOSSHIPMASK — VOS-SHIP-MASK"
+  },
+  {
+    "id": "VOSSRoCS",
+    "title": "VOSSRoCS — VOS-SRoCS"
+  },
+  {
+    "id": "VOSTH",
+    "title": "VOSTH — VOS-TH"
+  },
+  {
+    "id": "VOSUS",
+    "title": "VOSUS — VOS-US"
+  },
+  {
+    "id": "VOSZA",
+    "title": "VOSZA — VOS-ZA"
+  },
+  {
+    "id": "VOTOGlider",
+    "title": "VOTOGlider — VOTO: Ocean Knowledge glider program"
+  },
+  {
+    "id": "WhaleGlider",
+    "title": "WhaleGlider — Whale Glider Program"
+  },
+  {
+    "id": "WHOIGlider",
+    "title": "WHOIGlider — Woods Hole Spray glider Program"
+  },
+  {
+    "id": "WHYCOS",
+    "title": "WHYCOS"
+  },
+  {
+    "id": "windProfiler",
+    "title": "windProfiler — Wind Profilers"
+  },
+  {
+    "id": "WRO",
+    "title": "WRO"
+  }
+]

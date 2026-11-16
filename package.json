@@ -7,7 +7,8 @@
     "refresh:station-overview": "node scripts/build-station-overview.mjs --refresh",
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "refresh:program-affiliations": "pwsh -NoProfile -File scripts/refresh-program-affiliations.ps1"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",

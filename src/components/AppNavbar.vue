@@ -20,6 +20,7 @@
             {{ t('nav.export') }}
           </router-link>
         </li>
+        <li :class="{ active: route.name === 'about' }"><router-link to="/about">{{ t('nav.about') }}</router-link></li>
         <li class="nav-language">
           <el-dropdown trigger="click" popper-class="nav-language__menu" @command="handleLanguageChange">
             <span class="nav-language__trigger" :title="t('nav.language')">

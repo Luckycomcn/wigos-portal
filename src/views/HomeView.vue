@@ -77,7 +77,7 @@ const catalogue = ref<{ total?: number; last?: string }>({})
 onMounted(async () => {
   void loadTypeCount()
   try {
-    const stats = await getCatalogueStats()
+    const stats = await getCatalogueStats(statsController.signal)
     catalogue.value = { total: stats.totalFacilities, last: stats.lastCreated }
   } catch {
     // keep placeholders when the catalogue is unreachable

@@ -1,6 +1,7 @@
 // Messages used by the retained pages. Untranslated messages use English fallback.
 export default {
   "nav": {
+    "about": "关于",
     "home": "首页",
     "search": "搜索",
     "export": "导出",
@@ -48,6 +49,7 @@ export default {
     "searchPlaceholder": "搜索"
   },
   "route": {
+    "about": "关于",
     "home": "首页",
     "search": "搜索",
     "station": "台站",
@@ -106,13 +108,13 @@ export default {
     "advancedSearch": "高级搜索",
     "stats": {
       "totalStations": "台站总数",
-      "totalStationsNote": "（申报 + 评估）",
+      "totalStationsNote": "GOFC 实时总数",
       "countries": "国家 / 地区",
-      "countriesNote": "有报告的台站",
-      "observationTypes": "观测类型",
+      "countriesNote": "WMO 代码表条目",
+      "observationTypes": "站点类型",
       "observationTypesNote": "（记录的 WMDR 站点类型，不含 unknown）",
-      "lastUpdate": "最近更新",
-      "lastUpdateNote": "（UTC）"
+      "lastUpdate": "最新记录创建日期",
+      "lastUpdateNote": "GOFC 记录创建日期"
     },
     "hint": {
       "none": "未找到与 \"{term}\" 匹配的台站，正在显示全部台站。",
@@ -243,8 +245,8 @@ export default {
     "email": "邮箱"
   },
   "map": {
-    "filteredSnapshot": "筛选地图快照：{date} UTC · 当前视野 {count} 个站点（密集点聚合）",
-    "overviewSnapshot": "站点概览（密集点聚合），快照更新：{date} UTC",
+    "filteredSnapshot": "筛选地图快照：{date} · 当前视野 {count} 个站点（密集点聚合）",
+    "overviewSnapshot": "站点概览（密集点聚合），快照更新：{date}",
     "overviewUnmapped": "{count} 条记录无有效点坐标",
     "overviewZoomHint": "点击地图中的圆点放大查看站点。",
     "identifying": "请稍候，正在识别台站…",

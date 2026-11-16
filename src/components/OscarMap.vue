@@ -13,7 +13,7 @@
         @mouseenter="onPopupEnter"
         @mouseleave="onPopupLeave"
       >
-        <div class="identify-popup__title">{{ hover.title }}</div>
+        <div class="identify-popup__title"><router-link target="_blank" rel="noopener noreferrer" v-if="!hover.count" :to="{ name: 'stationReportDetails', params: { wigosId: hover.wigosId } }">{{ hover.title }}</router-link><span v-else>{{ hover.title }}</span></div>
         <div v-if="hover.count" class="identify-popup__body">{{ t('map.overviewZoomHint') }}</div>
         <div v-else class="identify-popup__body">
           <div><b>{{ $t('map.wigosId') }}:</b><br />{{ hover.wigosId }}</div>
@@ -33,7 +33,7 @@
               <button type="button" @click="downloadWmdrV2">{{ $t('stationReport.wmdrV2') }}</button>
             </span>
           </span>
-          <router-link
+          <router-link target="_blank" rel="noopener noreferrer"
             class="btn btn-default btn-xs"
             :to="{ name: 'stationReportDetails', params: { wigosId: hover.wigosId } }"
           >{{ $t('map.stationReport') }}</router-link>
@@ -74,9 +74,9 @@
     <p v-if="overviewActive" class="overview-note" role="status">{{ t('map.overviewSnapshot', { date: overview.generatedAt.slice(0, 10) }) }}<span v-if="overview.unmapped"> · {{ t('map.overviewUnmapped', { count: overview.unmapped }) }}</span></p>
     <p v-else-if="filteredSnapshotDate" class="overview-note" role="status">{{ t('map.filteredSnapshot', { date: filteredSnapshotDate, count: matchedCount.toLocaleString() }) }}<span v-if="filteredUnmapped"> · {{ t('map.overviewUnmapped', { count: filteredUnmapped }) }}</span></p>
     <div v-if="selected" class="oscar-infobox">
-      <strong>{{ selected.name }}</strong>
+      <strong><router-link target="_blank" rel="noopener noreferrer" :to="{ name: 'stationReportDetails', params: { wigosId: selected.wigosId } }">{{ selected.name }}</router-link></strong>
       <div>{{ selected.wigosId }} · {{ selected.type }}</div>
-      <router-link :to="{ name: 'stationReportDetails', params: { wigosId: selected.wigosId } }">{{ $t('map.openStationReport') }}</router-link>
+      <router-link target="_blank" rel="noopener noreferrer" :to="{ name: 'stationReportDetails', params: { wigosId: selected.wigosId } }">{{ $t('map.openStationReport') }}</router-link>
     </div>
   </div>
 </template>

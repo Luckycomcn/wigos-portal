@@ -25,7 +25,7 @@ Station reports share one template, with the WIGOS identifier changing to match 
 - **Languages:** English, Chinese, French and Spanish. English is the default; untranslated messages fall back to English.
 - **Routing:** hash-based URLs, suitable for static hosting without SPA history fallback rules.
 
-XML downloads retrieve the original WMDR metadata through its OAI service. CSV/JSON files are generated from catalogue records.
+XML links open the original WMDR source directly on oscar.wmo.int in a new tab. The catalogue original link will be followed when the archive location changes. CSV/JSON files are generated from catalogue records.
 
 ## Technology
 
@@ -96,15 +96,15 @@ npm run build
 npm run preview
 ```
 
-The `dist/` directory contains static files. Hash routing does not require SPA history fallback rules. XML downloads additionally require the proxy endpoints described below.
+The `dist/` directory contains static files. Hash routing does not require SPA history fallback rules. XML source links do not require a proxy.
 
 ## Docker deployment
 
 The repository includes a multi-stage `Dockerfile` that installs dependencies, compiles the application and serves the result with Nginx.
 
 ```bash
-git clone https://github.com/yangzhenggit/new-oscar-portal-demo.git
-cd new-oscar-portal-demo
+git clone https://github.com/yangzhenggit/wigos-portal.git
+cd wigos-portal
 
 docker build -t new-oscar-portal-demo .
 docker run -d --name oscar-portal -p 8080:8080 new-oscar-portal-demo
@@ -149,21 +149,15 @@ Linux containers mode for actual packaging; `-Check` does not require Docker.
 
 1. **Deployment paths**
 
-   Vite uses `base: './'` for relative build asset paths. The favicon references in `index.html` use absolute `/images/*` paths, and download proxy requests use root-relative URLs. Adjust these references and server routing when deploying under a subpath.
+   Vite uses `base: './'` for relative build asset paths. The favicon references in `index.html` use absolute `/images/*` paths, and map proxy requests use root-relative URLs. Adjust these references and server routing when deploying under a subpath.
 
 2. **Catalogue service**
 
    The default catalogue host is `https://wmo-resource-catalogue.labs.wis2dev.io`. Set `VITE_WIGOS_GOFC_URL` in a local `.env.local` file to override it, then restart Vite or rebuild.
 
-3. **Download proxies**
+3. **Original XML and map services**
 
-   `vite.config.ts` configures proxies for development and preview; `nginx.conf` provides the production equivalents:
-
-   | Endpoint | Purpose |
-   | --- | --- |
-   | `/wmdr-source` | Retrieve original WMDR XML through the OAI service |
-
-   Removing these proxies without replacing the download implementation will break the corresponding downloads. These are service requests, not imports of the original site's frontend code.
+   Original WMDR XML opens directly using the catalogue's original link, currently on oscar.wmo.int. No XML proxy is needed in Vite or nginx. The OSCAR endpoint will be retired during renewal; future archive URLs should be supplied by the catalogue. nginx retains /_AMapService/ proxies for AMap.
 
 4. **Styles and images**
 
@@ -279,4 +273,3 @@ Check that your Node.js version meets the requirements above. If errors involve 
 ## License and third-party resources
 
 Independently authored project code is licensed under **Apache License 2.0**; see [LICENSE](LICENSE) and [NOTICE](NOTICE).
-

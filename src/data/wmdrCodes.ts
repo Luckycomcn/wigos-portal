@@ -1,3 +1,4 @@
+import programAffiliationsRaw from './programAffiliations.json'
 import type { StationDomain } from './stations'
 import variableTreeRaw from './variableTree.json'
 import { findTerritoryId, territories, territoryById, type WmdrTerritory } from './wmdrTerritories'
@@ -74,33 +75,45 @@ export function wmoRegionTitle(id?: string | null): string {
   return wmoRegionIndex.get(id.toLowerCase()) ?? id
 }
 
-/**
- * Program affiliations that currently exist in the WIGOS observing facility catalogue.
- * Curated from https://codes.wmo.int/wmdr/ProgramAffiliation.
- */
-export const programAffiliations: WmdrCode[] = [
-  { id: 'GOSGeneral', title: 'GOS General' },
-  { id: 'GBON', title: 'GBON' },
-  { id: 'RBON', title: 'RBON' },
-  { id: 'RBSN', title: 'RBSN' },
-  { id: 'GSN', title: 'GSN' },
-  { id: 'GUAN', title: 'GUAN' },
-  { id: 'GTOS', title: 'GTOS' },
-  { id: 'GDP', title: 'Global Drifter Program (GDP)' },
-  { id: 'OceanSITES', title: 'OceanSITES' },
-  { id: 'ANTONs', title: 'ANTON(S)' },
-  { id: 'ANTONt', title: 'ANTON(T)' },
-  { id: 'AGAGE', title: 'AGAGE' },
-  { id: 'AERONET', title: 'AERONET' },
-  { id: 'EANET', title: 'EANET' },
-  { id: 'NDACC', title: 'NDACC' },
-  { id: 'TCCON', title: 'TCCON' },
-  { id: 'ICOS', title: 'ICOS' },
-  { id: 'GRUAN', title: 'GRUAN' },
-  { id: 'AMDAR', title: 'AMDAR' },
-]
+/** Complete WMO register snapshot; refresh with npm run refresh:program-affiliations. */
+export const programAffiliations: WmdrCode[] = [...programAffiliationsRaw]
 
 const programIndex = new Map(programAffiliations.map((p) => [p.id.toLowerCase(), p.title]))
+
+const PROGRAM_REGISTER_URL = 'https://codes.wmo.int/wmdr/ProgramAffiliation?_format=rdf'
+let programRequest: Promise<WmdrCode[]> | undefined
+
+/** Fetch once per page session. Offline, timeout, CORS and invalid responses retain the bundled list. */
+export function loadProgramAffiliations(): Promise<WmdrCode[]> {
+  return programRequest ??= (async () => {
+    try {
+      const response = await fetch(PROGRAM_REGISTER_URL, {
+        headers: { Accept: 'application/rdf+xml' },
+        signal: AbortSignal.timeout(10000),
+      })
+      if (!response.ok) throw new Error('WMO register request failed')
+      const document = new DOMParser().parseFromString(await response.text(), 'application/xml')
+      if (document.getElementsByTagName('parsererror').length) throw new Error('Invalid WMO XML')
+      const skos = 'http://www.w3.org/2004/02/skos/core#'
+      const rdfs = 'http://www.w3.org/2000/01/rdf-schema#'
+      const codes = new Map<string, WmdrCode>()
+      for (const member of Array.from(document.getElementsByTagNameNS(skos, 'member'))) {
+        const id = member.getElementsByTagNameNS(skos, 'notation')[0]?.textContent?.trim()
+        const label = member.getElementsByTagNameNS(rdfs, 'label')[0]?.textContent?.trim()
+        if (id) codes.set(id, { id, title: label && label !== id ? id + ' — ' + label : id })
+      }
+      // Reject error pages and truncated responses before replacing the fallback.
+      if (codes.size < 100 || !codes.has('GCWCryoNet')) throw new Error('Incomplete WMO register')
+      const updated = [...codes.values()].sort((a, b) => a.id.localeCompare(b.id))
+      programAffiliations.splice(0, programAffiliations.length, ...updated)
+      programIndex.clear()
+      for (const code of updated) programIndex.set(code.id.toLowerCase(), code.title)
+    } catch {
+      // The initial local snapshot remains usable throughout the request and on failure.
+    }
+    return [...programAffiliations]
+  })()
+}
 
 export function programTitle(id?: string | null): string {
   if (!id) return ''
