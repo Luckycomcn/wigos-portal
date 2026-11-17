@@ -1,11 +1,11 @@
 param(
-    [string]$ImageTag = 'new-oscar-portal-demo:1.0.0',
+    [string]$ImageTag = 'wigos-portal:1.0.0',
     [string]$AmapKey = '',
     [string]$TiandituKey = '',
     [string]$EnvFile = '.env.local',
     [switch]$Start,
     [ValidateRange(1, 65535)][int]$Port = 8080,
-    [string]$ContainerName = 'oscar-portal',
+    [string]$ContainerName = 'wigos-portal',
     [switch]$Check
 )
 
@@ -63,7 +63,7 @@ Copy-Item -LiteralPath (Join-Path $projectRoot 'NOTICE') -Destination $deliveryR
 $archiveHash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
 Set-Content -LiteralPath (Join-Path $deliveryRoot 'SHA256SUMS.txt') -Value "$archiveHash  $archiveName" -Encoding ascii
 $instructions = @"
-# New OSCAR Portal - Demo
+# WIGOS Portal
 
 Image: $ImageTag
 Platform: Linux amd64 (x86_64)
@@ -87,9 +87,9 @@ runtime.env contains the AMap security code; keep it private. It is not included
 in the image archive. Start the container from this delivery directory, so Docker
 can read runtime.env. Changing its code requires recreating the container.
 
-Check logs: docker logs oscar-portal
-Stop: docker stop oscar-portal
-Remove container: docker rm oscar-portal (stop it first)
+Check logs: docker logs wigos-portal
+Stop: docker stop wigos-portal
+Remove container: docker rm wigos-portal (stop it first)
 
 Verify the archive on Linux: sha256sum -c SHA256SUMS.txt
 Verify on PowerShell: Get-FileHash ./$archiveName -Algorithm SHA256

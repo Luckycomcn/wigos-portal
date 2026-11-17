@@ -99,10 +99,11 @@ export default {
     "station": "Station"
   },
   "home": {
+    "searchMinLength": "Enter at least 3 characters.",
     "searchRemoteError": "Catalogue search failed. Please retry. No demo search result is shown.",
     "typeCountError": "Unable to retrieve the populated facility type count.",
     "title": "Welcome to WIGOS Metadata System Portal",
-    "desc": "provides global meteorological observing station information and supports search, map, and data management for WIGOS",
+    "desc": "Provides information on meteorological observing stations worldwide and supports WIGOS station searches, map browsing and metadata downloads.",
     "searchPlaceholder": "Search by station name, alias or WIGOS ID...",
     "search": "Search",
     "advancedSearch": "Advanced Search",
@@ -124,7 +125,7 @@ export default {
   "search": {
     "criteria": "Criteria",
     "keyword": "Keyword / WIGOS station identifier",
-    "keywordPlaceholder": "Station name, alias or 0-20000-0-60415",
+    "keywordPlaceholder": "Search by station name, alias or WIGOS ID...",
     "results": "Results",
     "remoteCount": "{count} records in the WMO Resource Catalogue",
     "remoteNote": "Showing {count} of {total} matching records · catalogue time stamp {date}",
@@ -179,6 +180,45 @@ export default {
     "guideNote": "The business API is provided by the Catalogue through OGC API - Records; the portal only saves pages and export files.",
     "demoNote": "Connected to the live catalogue. Bulk exports fetch 250 records per page and can be cancelled. Downloads use the same generated data as the preview."
   },
+  "wmdrLabels": {
+  "role": {
+    "custodian": "Custodian",
+    "owner": "Owner",
+    "user": "User",
+    "distributor": "Distributor",
+    "originator": "Originator",
+    "pointOfContact": "Point of contact",
+    "principalInvestigator": "Principal investigator",
+    "processor": "Processor",
+    "publisher": "Publisher",
+    "author": "Author",
+    "resourceProvider": "Resource provider",
+    "unknown": "Unknown",
+    "inapplicable": "Not applicable",
+    "notApplicable": "Not applicable"
+  },
+  "geometry": {
+    "point": "Point",
+    "area": "Area",
+    "volume": "Volume",
+    "line": "Line",
+    "trajectory": "Trajectory",
+    "profile": "Profile",
+    "grid": "Grid",
+    "unknown": "Unknown",
+    "inapplicable": "Not applicable",
+    "notApplicable": "Not applicable"
+  },
+  "method": {
+    "unknown": "Unknown",
+    "inapplicable": "Not applicable",
+    "notApplicable": "Not applicable",
+    "automatic": "Automatic observation",
+    "manual": "Manual observation",
+    "inSitu": "In situ observation",
+    "remoteSensing": "Remote sensing"
+  }
+},
   "stationReport": {
     "downloadError": "Download failed: {message}. Please retry.",
     "territoryAssignments": "Country / territory affiliations",

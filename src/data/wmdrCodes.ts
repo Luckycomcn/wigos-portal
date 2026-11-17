@@ -100,7 +100,7 @@ export function loadProgramAffiliations(): Promise<WmdrCode[]> {
       for (const member of Array.from(document.getElementsByTagNameNS(skos, 'member'))) {
         const id = member.getElementsByTagNameNS(skos, 'notation')[0]?.textContent?.trim()
         const label = member.getElementsByTagNameNS(rdfs, 'label')[0]?.textContent?.trim()
-        if (id) codes.set(id, { id, title: label && label !== id ? id + ' — ' + label : id })
+        if (id) codes.set(id, { id, title: label || id })
       }
       // Reject error pages and truncated responses before replacing the fallback.
       if (codes.size < 100 || !codes.has('GCWCryoNet')) throw new Error('Incomplete WMO register')
@@ -122,7 +122,8 @@ export function programTitle(id?: string | null): string {
 
 export function programIdByTitle(title: string): string | undefined {
   const needle = title.trim().toLowerCase()
-  return programAffiliations.find((p) => p.title.toLowerCase() === needle || p.id.toLowerCase() === needle)?.id
+  return programAffiliations.find((p) => p.id.toLowerCase() === needle)?.id
+    ?? programAffiliations.find((p) => p.title.toLowerCase() === needle)?.id
 }
 
 interface VariableNode {

@@ -1,6 +1,6 @@
-# new-oscar-portal-demo
+# wigos-portal
 
-A demonstration WIGOS metadata portal built with Vue 3, TypeScript, SCSS and OpenLayers. Station search, reports, maps and statistics use the WMO Resource Catalogue; reference vocabularies are bundled locally.
+A demonstration WIGOS metadata portal built with Vue 3, TypeScript, SCSS and OpenLayers. Station search, reports, maps and statistics use the WMO Resource Catalogue. Reference vocabularies are bundled locally; the programme/network affiliation list also refreshes from the WMO register at runtime, retaining the bundled list if the request fails.
 
 > This is an independent demonstration portal. Station queries and exports require access to external services. The legacy local station-list fallback has been removed.
 
@@ -20,12 +20,12 @@ Station reports share one template, with the WIGOS identifier changing to match 
 - **Home:** welcome panel, world map, station markers, legend and catalogue statistics.
 - **Search:** keyword and metadata filters, result tables, pagination and map view.
 - **Station reports:** station characteristics, observation metadata and report downloads.
-- **Export:** generate and download CSV/JSON result sets and individual JSON records.
+- **Export:** generate and download JSON (GeoJSON) result sets and individual JSON records.
 - **Maps:** zoom, reset view, select a basemap and inspect station information.
 - **Languages:** English, Chinese, French and Spanish. English is the default; untranslated messages fall back to English.
 - **Routing:** hash-based URLs, suitable for static hosting without SPA history fallback rules.
 
-XML links open the original WMDR source directly on oscar.wmo.int in a new tab. The catalogue original link will be followed when the archive location changes. CSV/JSON files are generated from catalogue records.
+XML links open the original WMDR source directly on oscar.wmo.int in a new tab. The catalogue original link will be followed when the archive location changes. JSON (GeoJSON) files are generated from catalogue records.
 
 ## Technology
 
@@ -103,11 +103,11 @@ The `dist/` directory contains static files. Hash routing does not require SPA h
 The repository includes a multi-stage `Dockerfile` that installs dependencies, compiles the application and serves the result with Nginx.
 
 ```bash
-git clone https://github.com/yangzhenggit/wigos-portal.git
+git clone https://github.com/Luckycomcn/wigos-portal.git
 cd wigos-portal
 
-docker build -t new-oscar-portal-demo .
-docker run -d --name oscar-portal -p 8080:8080 new-oscar-portal-demo
+docker build -t wigos-portal .
+docker run -d --name wigos-portal -p 8080:8080 wigos-portal
 ```
 
 Open [http://localhost:8080/](http://localhost:8080/). To use a different host port, change the left-hand port mapping, for example `-p 8081:8080`.
@@ -123,10 +123,10 @@ From the project directory:
 ./scripts/build-delivery.ps1 -Check
 
 # Build a Linux amd64 image, validate Nginx, and export a delivery archive.
-./scripts/build-delivery.ps1 -ImageTag oscar-portal:latest
+./scripts/build-delivery.ps1 -ImageTag wigos-portal:latest
 
 # Also start the container after packaging (default host port 8080).
-./scripts/build-delivery.ps1 -ImageTag oscar-portal:latest -Start
+./scripts/build-delivery.ps1 -ImageTag wigos-portal:latest -Start
 ```
 
 The script reads `VITE_TIANDITU_KEY`, `VITE_AMAP_KEY` and
@@ -169,7 +169,7 @@ Linux containers mode for actual packaging; `-Check` does not require Docker.
 
 6. **Local reference data**
 
-   JSON reference files imported from `src/data/` are build inputs and must remain available. Station search uses the online catalogue rather than a local station-list fallback.
+   JSON reference files imported from `src/data/` are build inputs and must remain available. Station types, WMO regions, countries/territories and observed-variable options use bundled reference data. The programme/network affiliation filter initially uses a bundled snapshot, then requests the WMO ProgramAffiliation register once per page session (10-second timeout); failed, invalid or incomplete responses retain the snapshot. Station search uses the online catalogue rather than a local station-list fallback.
 
 7. **Map providers**
 

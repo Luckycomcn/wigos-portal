@@ -25,7 +25,7 @@ async function scenario({ fail, invalid, small } = {}) {
   assert.equal(requests,1)
   assert.equal(a.length,b.length)
   if(fail||invalid||small) assert.equal(JSON.stringify(a),JSON.stringify(fallback))
-  else { assert.equal(a.length,101); assert.equal(api.programIdByTitle('NEW1 — New programme 1'),'NEW1'); assert.equal(api.programTitle('GCWCryoNet'),'GCWCryoNet — Updated CryoNet') }
+  else { assert.equal(a.length,101); assert.equal(api.programIdByTitle('New programme 1'),'NEW1'); assert.equal(api.programIdByTitle('NEW1'),'NEW1'); assert.equal(api.programTitle('GCWCryoNet'),'Updated CryoNet') }
 }
 await scenario()
 await scenario({fail:true})

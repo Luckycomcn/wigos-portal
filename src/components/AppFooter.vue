@@ -22,7 +22,7 @@
     <span>
       {{ $t('footer.disclaimer') }}
     </span>
-    <span>@ 2026 <a href="https://github.com/yangzhenggit/wigos-portal" target="_blank" rel="noopener noreferrer">new-oscar-portal-demo</a> {{ version }} · <router-link to="/about">{{ $t('nav.about') }}</router-link></span>
+    <span>@ 2026 <a href="https://github.com/Luckycomcn/wigos-portal" target="_blank" rel="noopener noreferrer">wigos-portal</a> {{ version }} · <router-link to="/about">{{ $t('nav.about') }}</router-link></span>
   </div>
 </template>
 

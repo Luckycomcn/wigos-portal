@@ -9,7 +9,7 @@ $codes = @($register.SelectNodes('//skos:member/skos:Concept', $ns) | ForEach-Ob
     $id = $_.SelectSingleNode('skos:notation', $ns).InnerText
     $label = $_.SelectSingleNode('rdfs:label', $ns).InnerText
     if ($id) {
-        $title = if ($label -and $label -ne $id) { "$id — $label" } else { $id }
+        $title = if ($label -and $label.Trim()) { $label.Trim() } else { $id }
         [PSCustomObject]@{ id = $id; title = $title }
     }
 } | Sort-Object id)

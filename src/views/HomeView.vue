@@ -14,12 +14,15 @@
               :prefix-icon="Search"
               class="home-hero__input"
               clearable
+              @focus="searchFocused = true"
+              @blur="searchFocused = false"
               @keyup.enter="doSearch"
             />
             <el-button type="success" :icon="Search" :loading="searchBusy" @click="doSearch">{{ $t('home.search') }}</el-button>
             <el-button :icon="Filter" @click="goAdvanced">{{ $t('home.advancedSearch') }}</el-button>
           </div>
-          <div v-if="searchHint" class="home-hero__hint" role="status">{{ searchHint }} <el-button v-if="searchError" size="small" @click="doSearch">{{ t('common.retry') }}</el-button></div>
+          <div v-if="showMinLengthHint" class="home-hero__hint" role="status">{{ t('home.searchMinLength') }}</div>
+          <div v-else-if="searchHint" class="home-hero__hint" role="status">{{ searchHint }} <el-button v-if="searchError" size="small" @click="doSearch">{{ t('common.retry') }}</el-button></div>
         </div>
         <div class="home-hero__stats">
           <div class="stat-card" v-for="stat in stats" :key="stat.label">
@@ -33,13 +36,13 @@
         </div>
       </div>
       <p v-if="typeError" role="alert">{{ t('home.typeCountError') }} <el-button size="small" @click="loadTypeCount">{{ t('common.retry') }}</el-button></p>
-      <OscarMap />
+      <OscarMap :map-query="submittedWsi ? { q: submittedWsi } : undefined" />
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElButton, ElIcon, ElInput } from 'element-plus'
 import 'element-plus/es/components/button/style/css'
@@ -57,6 +60,17 @@ const { t } = useI18n()
 
 const router = useRouter()
 const quickTerm = ref('')
+const submittedWsi = ref('')
+watch(quickTerm, (value) => {
+  if (!value.trim()) {
+    submittedWsi.value = ''
+    focusedStation.value = null
+    searchHint.value = ''
+  }
+})
+const searchFocused = ref(false)
+const searchAttempted = ref(false)
+const showMinLengthHint = computed(() => (searchFocused.value || searchAttempted.value) && Array.from(quickTerm.value.trim()).length < 3)
 const searchHint = ref('')
 const searchError = ref(false)
 const searchBusy = ref(false)
@@ -88,12 +102,16 @@ async function doSearch() {
   searchController?.abort()
   const controller = new AbortController()
   searchController = controller
-  const raw = quickTerm.value.trim()
+  const raw = quickTerm.value.trim().toLowerCase()
   focusedStation.value = null
   searchHint.value = ''
   searchError.value = false
   searchBusy.value = false
-  if (!raw) return
+  if (Array.from(raw).length < 3) {
+    searchAttempted.value = true
+    return
+  }
+  submittedWsi.value = raw.startsWith('0-') ? raw : ''
   searchBusy.value = true
   try {
     const result = await searchFacilities({ q: raw, limit: 1, sortby: 'title', signal: controller.signal })

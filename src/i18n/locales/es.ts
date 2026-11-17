@@ -1,4 +1,4 @@
-// Messages used by the retained pages. Untranslated messages use English fallback.
+// UI messages for all supported pages.
 export default {
   "nav": {
     "about": "Acerca de",
@@ -74,7 +74,14 @@ export default {
       "wigos": "Componentes de WIGOS",
       "coSponsored": "Componentes copatrocinados",
       "other": "Otros componentes",
-      "nonAffiliated": "No afiliado"
+      "nonAffiliated": "No afiliado",
+      "gos": "GOS",
+      "gaw": "GAW",
+      "whos": "WHOS",
+      "gcw": "GCW",
+      "gcos": "GCOS",
+      "goos": "GOOS",
+      "gtos": "GTOS"
     },
     "status": {
       "operational": "Operativa",
@@ -86,7 +93,7 @@ export default {
   },
   "home": {
     "title": "Bienvenido al portal del sistema de metadatos WIGOS",
-    "desc": "El portal del sistema de metadatos WIGOS ofrece información sobre estaciones de observación meteorológica de todo el mundo y permite buscar, consultar mapas y gestionar datos de WIGOS.",
+    "desc": "Ofrece información sobre estaciones de observación meteorológica de todo el mundo y permite buscar estaciones WIGOS, consultar mapas y descargar metadatos.",
     "searchPlaceholder": "Buscar por nombre, alias o identificador WIGOS...",
     "search": "Buscar",
     "advancedSearch": "Búsqueda avanzada",
@@ -98,8 +105,9 @@ export default {
       "observationTypes": "Tipos de estaciones",
       "observationTypesNote": "Tipos del catálogo",
       "lastUpdate": "Último registro añadido",
-      "lastUpdateNote": "Fecha de creación GOFC"
+      "lastUpdateNote": "Fecha de creación en GOFC"
     },
+    "searchMinLength": "Introduzca al menos 3 caracteres.",
     "searchRemoteError": "La búsqueda en el catálogo falló. Inténtelo de nuevo. No se muestran resultados de demostración.",
     "typeCountError": "No se pudo obtener el número de tipos de estaciones con datos.",
     "hint": {
@@ -202,7 +210,108 @@ export default {
   "searchNav": {
     "station": "Estación"
   },
+  "wmdrLabels": {
+    "role": {
+      "custodian": "Custodio",
+      "owner": "Propietario",
+      "user": "Usuario",
+      "distributor": "Distribuidor",
+      "originator": "Creador",
+      "pointOfContact": "Punto de contacto",
+      "principalInvestigator": "Investigador principal",
+      "processor": "Responsable del procesamiento",
+      "publisher": "Editor",
+      "author": "Autor",
+      "resourceProvider": "Proveedor de recursos",
+      "unknown": "Desconocido",
+      "inapplicable": "No aplicable",
+      "notApplicable": "No aplicable"
+    },
+    "geometry": {
+      "point": "Punto",
+      "area": "Área",
+      "volume": "Volumen",
+      "line": "Línea",
+      "trajectory": "Trayectoria",
+      "profile": "Perfil",
+      "grid": "Cuadrícula",
+      "unknown": "Desconocido",
+      "inapplicable": "No aplicable",
+      "notApplicable": "No aplicable"
+    },
+    "method": {
+      "unknown": "Desconocido",
+      "inapplicable": "No aplicable",
+      "notApplicable": "No aplicable",
+      "automatic": "Observación automática",
+      "manual": "Observación manual",
+      "inSitu": "Observación in situ",
+      "remoteSensing": "Teledetección"
+    }
+  },
   "stationReport": {
-    "programNote": "Las afiliaciones a programas y redes proceden de los metadatos de la estación. Su disponibilidad y estado dependen del registro de origen."
+    "programNote": "Las afiliaciones a programas y redes proceden de los metadatos de la estación. Su disponibilidad y estado dependen del registro de origen.",
+    "downloadError": "Error de descarga: {message}. Inténtelo de nuevo.",
+    "territoryAssignments": "Vinculaciones con países / territorios",
+    "territoryNote": "Países o territorios asociados a la estación y períodos de validez de dichas vinculaciones; pueden diferir de la ubicación actual de la plataforma.",
+    "validFrom": "Válido desde",
+    "validTo": "Válido hasta",
+    "openEnded": "Sin fecha de finalización especificada",
+    "unspecified": "Sin especificar",
+    "noTerritories": "No se han indicado vinculaciones con países o territorios.",
+    "observationsNote": "Metadatos de observación: variables, geometría, afiliaciones a programas y períodos de despliegue de las configuraciones. No se incluyen los valores medidos.",
+    "wmoRegion": "Región de la OMM",
+    "territory": "País / territorio",
+    "stillOperational": "(sigue en funcionamiento)",
+    "recordCreated": "Fecha de creación del registro:",
+    "openInCatalogue": "Abrir en el catálogo de recursos de la OMM",
+    "loadError": "No se puede cargar este registro desde el catálogo de recursos de la OMM.",
+    "notFound": "Este identificador WIGOS no se ha encontrado en el catálogo.",
+    "mapAttribution": "© Colaboradores de OpenStreetMap",
+    "statusNote": "El estado se deduce del intervalo temporal WMDR2: los registros sin fecha de finalización se muestran como operativos, y aquellos cuya fecha de finalización ya ha pasado, como cerrados. El catálogo no publica un estado declarado o evaluado.",
+    "thCode": "Código",
+    "noPrograms": "No se ha registrado ninguna afiliación a programas.",
+    "variableId": "Identificador de la variable",
+    "observedVariable": "Variable observada",
+    "method": "Método de observación",
+    "noObservations": "No se han registrado observaciones para esta estación.",
+    "noContacts": "No se han registrado contactos.",
+    "links": "Enlaces y referencias",
+    "noLinks": "No se han registrado enlaces.",
+    "conformsTo": "Conforme a:",
+    "inRegion": "en la región {region} de la OMM",
+    "download": "Descargar",
+    "generating": "Generando…",
+    "xml": "Estación en formato WMDR XML",
+    "wmdrV2": "Estación en formato WMDR V2 (JSON)",
+    "stationCharacteristics": "Características de la estación",
+    "name": "Nombre",
+    "stationType": "Tipo de estación",
+    "wigosIds": "Identificadores de estación WIGOS",
+    "thWigosId": "Identificador de estación WIGOS",
+    "thPrimary": "Principal",
+    "coordinates": "Coordenadas",
+    "siteDescription": "Descripción del emplazamiento",
+    "dateEstablished": "Fecha de establecimiento:",
+    "dateClosed": "Fecha de cierre:",
+    "declaredStatus": "Estado declarado de la estación:",
+    "assessedStatus": "Estado evaluado de la estación:",
+    "programmes": "Afiliaciones a programas / redes",
+    "thProgramme": "Afiliación al programa / red",
+    "thDeclaredStatus": "Estado declarado",
+    "observations": "Observaciones / mediciones",
+    "variable": "Variable:",
+    "programmesLabel": "Programas:",
+    "deployments": "Despliegues",
+    "contact": "Contacto",
+    "organization": "Organización",
+    "contactRole": "Función del contacto",
+    "mainContact": "Contacto principal",
+    "contactEmail": "Correo electrónico de contacto"
+  },
+  "contact": {
+    "name": "Nombre",
+    "organization": "Organización",
+    "email": "Correo electrónico"
   }
 }

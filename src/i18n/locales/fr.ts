@@ -1,4 +1,4 @@
-// Messages used by the retained pages. Untranslated messages use English fallback.
+// UI messages for all supported pages.
 export default {
   "nav": {
     "about": "À propos",
@@ -74,7 +74,14 @@ export default {
       "wigos": "Composantes du WIGOS",
       "coSponsored": "Composantes coparrainées",
       "other": "Autres composantes",
-      "nonAffiliated": "Non affilié"
+      "nonAffiliated": "Non affilié",
+      "gos": "GOS",
+      "gaw": "GAW",
+      "whos": "WHOS",
+      "gcw": "GCW",
+      "gcos": "GCOS",
+      "goos": "GOOS",
+      "gtos": "GTOS"
     },
     "status": {
       "operational": "Opérationnelle",
@@ -86,7 +93,7 @@ export default {
   },
   "home": {
     "title": "Bienvenue sur le portail du système de métadonnées WIGOS",
-    "desc": "Le portail du système de métadonnées WIGOS fournit des informations sur les stations d’observation météorologique du monde entier et permet la recherche, la cartographie et la gestion des données WIGOS.",
+    "desc": "Fournit des informations sur les stations d’observation météorologique du monde entier et permet de rechercher des stations WIGOS, de consulter des cartes et de télécharger des métadonnées.",
     "searchPlaceholder": "Rechercher par nom, alias ou identifiant WIGOS...",
     "search": "Rechercher",
     "advancedSearch": "Recherche avancée",
@@ -98,8 +105,9 @@ export default {
       "observationTypes": "Types de stations",
       "observationTypesNote": "Types du catalogue",
       "lastUpdate": "Dernier enregistrement ajouté",
-      "lastUpdateNote": "Date de création GOFC"
+      "lastUpdateNote": "Date de création dans GOFC"
     },
+    "searchMinLength": "Saisissez au moins 3 caractères.",
     "searchRemoteError": "La recherche dans le catalogue a échoué. Veuillez réessayer. Aucun résultat de démonstration n’est affiché.",
     "typeCountError": "Impossible de récupérer le nombre de types de stations renseignés.",
     "hint": {
@@ -202,7 +210,108 @@ export default {
   "searchNav": {
     "station": "Station"
   },
+  "wmdrLabels": {
+    "role": {
+      "custodian": "Dépositaire",
+      "owner": "Propriétaire",
+      "user": "Utilisateur",
+      "distributor": "Distributeur",
+      "originator": "Initiateur",
+      "pointOfContact": "Point de contact",
+      "principalInvestigator": "Chercheur principal",
+      "processor": "Responsable du traitement",
+      "publisher": "Éditeur",
+      "author": "Auteur",
+      "resourceProvider": "Fournisseur de ressources",
+      "unknown": "Inconnu",
+      "inapplicable": "Sans objet",
+      "notApplicable": "Sans objet"
+    },
+    "geometry": {
+      "point": "Point",
+      "area": "Surface",
+      "volume": "Volume",
+      "line": "Ligne",
+      "trajectory": "Trajectoire",
+      "profile": "Profil",
+      "grid": "Grille",
+      "unknown": "Inconnu",
+      "inapplicable": "Sans objet",
+      "notApplicable": "Sans objet"
+    },
+    "method": {
+      "unknown": "Inconnu",
+      "inapplicable": "Sans objet",
+      "notApplicable": "Sans objet",
+      "automatic": "Observation automatique",
+      "manual": "Observation manuelle",
+      "inSitu": "Observation in situ",
+      "remoteSensing": "Télédétection"
+    }
+  },
   "stationReport": {
-    "programNote": "Les affiliations aux programmes et réseaux proviennent des métadonnées de la station. Leur disponibilité et leur statut dépendent de la fiche source."
+    "programNote": "Les affiliations aux programmes et réseaux proviennent des métadonnées de la station. Leur disponibilité et leur statut dépendent de la fiche source.",
+    "downloadError": "Échec du téléchargement : {message}. Veuillez réessayer.",
+    "territoryAssignments": "Rattachements aux pays / territoires",
+    "territoryNote": "Pays ou territoires associés à la station et périodes de validité de ces rattachements ; ils peuvent différer de la position actuelle de la plateforme.",
+    "validFrom": "Valide à partir du",
+    "validTo": "Valide jusqu’au",
+    "openEnded": "Aucune date de fin précisée",
+    "unspecified": "Non précisé",
+    "noTerritories": "Aucun rattachement à un pays ou territoire renseigné.",
+    "observationsNote": "Métadonnées des observations : variables, géométrie, affiliations aux programmes et périodes de déploiement des configurations. Les valeurs mesurées ne sont pas incluses.",
+    "wmoRegion": "Région de l’OMM",
+    "territory": "Pays / territoire",
+    "stillOperational": "(toujours en service)",
+    "recordCreated": "Création de la fiche :",
+    "openInCatalogue": "Ouvrir dans le catalogue de ressources de l’OMM",
+    "loadError": "Impossible de charger cette fiche depuis le catalogue de ressources de l’OMM.",
+    "notFound": "Cet identifiant WIGOS est introuvable dans le catalogue.",
+    "mapAttribution": "© Contributeurs OpenStreetMap",
+    "statusNote": "Le statut est déduit de l’intervalle temporel WMDR2 : les fiches sans date de fin sont affichées comme étant en service, et celles dont la date de fin est passée comme fermées. Le catalogue ne publie pas de statut déclaré ou évalué.",
+    "thCode": "Code",
+    "noPrograms": "Aucune affiliation à un programme renseignée.",
+    "variableId": "Identifiant de la variable",
+    "observedVariable": "Variable observée",
+    "method": "Méthode d’observation",
+    "noObservations": "Aucune observation renseignée pour cette station.",
+    "noContacts": "Aucun contact renseigné.",
+    "links": "Liens et références",
+    "noLinks": "Aucun lien renseigné.",
+    "conformsTo": "Conforme à :",
+    "inRegion": "dans la région {region} de l’OMM",
+    "download": "Télécharger",
+    "generating": "Génération en cours…",
+    "xml": "Station au format WMDR XML",
+    "wmdrV2": "Station au format WMDR V2 (JSON)",
+    "stationCharacteristics": "Caractéristiques de la station",
+    "name": "Nom",
+    "stationType": "Type de station",
+    "wigosIds": "Identifiants de station WIGOS",
+    "thWigosId": "Identifiant de station WIGOS",
+    "thPrimary": "Principal",
+    "coordinates": "Coordonnées",
+    "siteDescription": "Description du site",
+    "dateEstablished": "Date de création de la station :",
+    "dateClosed": "Date de fermeture :",
+    "declaredStatus": "Statut déclaré de la station :",
+    "assessedStatus": "Statut évalué de la station :",
+    "programmes": "Affiliations aux programmes / réseaux",
+    "thProgramme": "Affiliation au programme / réseau",
+    "thDeclaredStatus": "Statut déclaré",
+    "observations": "Observations / mesures",
+    "variable": "Variable :",
+    "programmesLabel": "Programmes :",
+    "deployments": "Déploiements",
+    "contact": "Contact",
+    "organization": "Organisation",
+    "contactRole": "Rôle du contact",
+    "mainContact": "Contact principal",
+    "contactEmail": "Adresse électronique du contact"
+  },
+  "contact": {
+    "name": "Nom",
+    "organization": "Organisation",
+    "email": "Adresse électronique"
   }
 }

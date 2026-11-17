@@ -4,6 +4,7 @@
     <div v-show="identifying" class="oscar-map-wait">{{ $t('map.identifying') }}</div>
     <div class="oscar-ol-wrap" ref="wrapEl">
       <div ref="amapEl" class="oscar-amap" :style="{ visibility: basemap === 'amap' ? 'visible' : 'hidden' }"></div>
+      <div ref="basemapEl" class="oscar-basemap" aria-hidden="true"></div>
       <div ref="mapEl" class="map oscar-ol-map"></div>
 
       <div
@@ -150,6 +151,8 @@ const legend: { labelKey: string; domain: StationDomain; color: string }[] = [
 ]
 
 const mapEl = ref<HTMLDivElement | null>(null)
+const basemapEl = ref<HTMLDivElement | null>(null)
+const basemapRef = shallowRef<Map | null>(null)
 const wrapEl = ref<HTMLDivElement | null>(null)
 const mapRef = shallowRef<Map | null>(null)
 const vectorRef = shallowRef<VectorLayer<VectorSource> | null>(null)
@@ -359,7 +362,7 @@ function dotStyle(color: string, radius = 2) {
 
 function clusterFeaturesByDistance(features: Feature[], distance: number): Feature[] {
   if (!(distance > 0)) return features
-  type Group = { seed: Feature; x: number; y: number; count: number }
+  type Group = { seed: Feature; x: number; y: number; count: number; members: Feature[] }
   const buckets = new globalThis.Map<string, Group[]>()
   const groups: Group[] = []
   const identity = (feature: Feature) => String(feature.get('wigosId') ?? feature.get('station')?.wigosId ?? '')
@@ -381,18 +384,18 @@ function clusterFeaturesByDistance(features: Feature[], distance: number): Featu
         if (squared <= radiusSquared && (!nearest || squared < best)) { nearest = group; best = squared }
       }
     }
-    if (nearest) nearest.count++
+    if (nearest) { nearest.count++; nearest.members.push(feature) }
     else {
-      const group = { seed: feature, x, y, count: 1 }
+      const group = { seed: feature, x, y, count: 1, members: [feature] }
       const key = `${col},${row},${domain}`
       const bucket = buckets.get(key) ?? []
       bucket.push(group); buckets.set(key, bucket); groups.push(group)
     }
   }
-  return groups.map(({ seed, count }) => {
+  return groups.map(({ seed, count, members }) => {
     if (count === 1) return seed
     const cluster = new Feature({ geometry: seed.getGeometry()!.clone(), cluster: true, count,
-      domain: seed.get('domain'), representativeId: identity(seed) })
+      domain: seed.get('domain'), members, representativeId: identity(seed) })
     cluster.setStyle(seed.getStyle())
     return cluster
   })
@@ -454,6 +457,44 @@ function hoverFromFeature(feature: WigosFeature): HoverInfo {
   }
 }
 
+const overviewPoints = new globalThis.Map<string, Promise<[string, number, number][]>>()
+async function randomGroupStation(hit: Feature, seedId: string): Promise<string> {
+  const members = hit.get('members') as Feature[] | undefined
+  if (members?.length) {
+    const member = members[Math.floor(Math.random() * members.length)]!
+    return member.get('wigosId') ?? member.get('station')?.wigosId ?? seedId
+  }
+  const type = String(hit.get('properties.facilityType.id') ?? '')
+  const domain = facilityTypeDomain(type)
+  const entries = Object.entries(overview.pointFiles).filter(([id]) => facilityTypeDomain(id) === domain)
+  const rows = (await Promise.all(entries.map(([, entry]) => {
+    if (!overviewPoints.has(entry.path)) {
+      const request = fetch(`${import.meta.env.BASE_URL}${entry.path}`).then(response => {
+        if (!response.ok) throw new Error('Station overview unavailable')
+        return response.json() as Promise<[string, number, number][]>
+      }).catch(error => { overviewPoints.delete(entry.path); throw error })
+      overviewPoints.set(entry.path, request)
+    }
+    return overviewPoints.get(entry.path)!
+  }))).flat()
+  const seed = rows.find(row => row[0] === seedId)
+  if (!seed) return seedId
+  const resolution = mapRef.value?.getView().getResolution()
+  const z = Math.min(overview.maxZoom, overviewTileSource.getTileGrid()!.getZForResolution(resolution ?? 156543, 1))
+  const n = 2 ** z, cellSize = z <= 2 ? 128 : 64
+  const cell = (row: [string, number, number]) => {
+    const x = (row[1] + 180) / 360 * n
+    const sin = Math.sin(Math.max(-85.05112878, Math.min(85.05112878, row[2])) * Math.PI / 180)
+    const y = (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * n
+    const tx = Math.max(0, Math.min(n - 1, Math.floor(x)))
+    const ty = Math.max(0, Math.min(n - 1, Math.floor(y)))
+    return [tx, ty, Math.floor(Math.round((x - tx) * 4096) / cellSize), Math.floor(Math.round((y - ty) * 4096) / cellSize)].join('/')
+  }
+  const key = cell(seed)
+  const candidates = rows.filter(row => cell(row) === key)
+  return candidates[Math.floor(Math.random() * candidates.length)]?.[0] ?? seedId
+}
+
 function onPointerMove(evt: { pixel: number[]; coordinate: number[]; originalEvent: PointerEvent }) {
   const map = mapRef.value
   if (!map) return
@@ -473,17 +514,24 @@ function onPointerMove(evt: { pixel: number[]; coordinate: number[]; originalEve
       layerFilter: layer => layer === stationTiles || layer === vectorRef.value,
     }) as Feature | undefined
     const station = (hit?.get('station') as Station | undefined) ?? null
-    const wigosId = (hit?.get('wigosId') ?? hit?.get('id') ?? hit?.get('_id')) as string | undefined
-    const key = wigosId || (station ? station.wigosId : '')
+    let wigosId = (hit?.get('wigosId') ?? hit?.get('id') ?? hit?.get('_id')) as string | undefined
+    let key = wigosId || (station ? station.wigosId : '')
     const count = Number(hit?.get('count') ?? 1)
-    if (count > 1) {
-      window.clearTimeout(hideTimer)
-      hoverKey = ''
+    if (count > 1 && hit) {
+      const groupKey = 'group:' + (wigosId || hit.get('representativeId'))
+      if (hoverKey === groupKey && hover.value) { window.clearTimeout(hideTimer); return }
+      hoverKey = groupKey
       popupPos.value = clampPopup(px + 14, py + 14)
-      hover.value = { title: locale.value === 'zh' ? `${count} 个站点` : `${count} stations`, count, wigosId: '', type: '', status: '', programs: '', established: '' }
-      const target = map.getTargetElement()
-      if (target) target.style.cursor = 'pointer'
-      return
+      hover.value = null
+      try {
+        wigosId = await randomGroupStation(hit as Feature, wigosId || hit.get('representativeId'))
+        if (pointerVersion !== hoverRequestVersion || mapRef.value !== map) return
+        key = groupKey
+      } catch {
+        if (pointerVersion !== hoverRequestVersion) return
+        downloadError.value = t('stationReport.loadError')
+        return
+      }
     }
     if (station && !wigosId) {
       if (!hover.value || hoverKey !== key) {
@@ -696,7 +744,7 @@ async function loadViewport() {
 }
 
 onMounted(() => {
-  if (!mapEl.value) return
+  if (!mapEl.value || !basemapEl.value) return
   const vector = new VectorLayer({
     source: new VectorSource({ features: buildCloud(), wrapX: false }),
     declutter: false,
@@ -708,7 +756,7 @@ onMounted(() => {
     controls: defaultControls({ zoom: false, rotate: false }).extend([
       new ScaleLine({ units: 'metric', minWidth: 100 }),
     ]),
-    layers: [gridLayer, landLayer, osmLayer, ...tiandituLayers, stationTiles, vector],
+    layers: [stationTiles, vector],
     view: new View({
       center: fromLonLat(DEFAULT_CENTER),
       zoom: DEFAULT_ZOOM,
@@ -720,6 +768,16 @@ onMounted(() => {
       smoothResolutionConstraint: true,
       showFullExtent: false,
     }),
+  })
+  // Separate Maps own separate tile queues. Unreachable basemap services must
+  // never occupy the loading slots needed by station tiles.
+  basemapRef.value = new Map({
+    target: basemapEl.value,
+    pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+    controls: [],
+    interactions: [],
+    layers: [gridLayer, landLayer, osmLayer, ...tiandituLayers],
+    view: map.getView(),
   })
   map.on('singleclick', async (evt) => {
     if (tilesActive.value) {
@@ -776,6 +834,7 @@ onMounted(() => {
     const previousWorldZoom = previousSize ? view.getZoomForResolution((WORLD_EXTENT[2]! - WORLD_EXTENT[0]!) / previousSize[0]!) : undefined
     const showingWorld = basemap.value === 'osm' && previousWorldZoom != null && Math.abs((view.getZoom() ?? 0) - previousWorldZoom) < 0.05
     map.updateSize()
+    basemapRef.value?.updateSize()
     if (showingWorld) fitWorld()
   })
   resizeObserver.value.observe(mapEl.value)
@@ -826,8 +885,10 @@ onBeforeUnmount(() => {
   window.clearTimeout(hideTimer)
   window.clearTimeout(viewportTimer)
   hoverRequestVersion++
-  mapRef.value?.setTarget(undefined)
+  mapRef.value?.dispose()
   mapRef.value = null
+  basemapRef.value?.dispose()
+  basemapRef.value = null
 })
 
 function zoomBy(delta: number) {
@@ -978,6 +1039,12 @@ function flyToFocusedStation() {
   position: relative;
   width: 100%;
   height: 520px;
+}
+
+.oscar-basemap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
 .oscar-map-wait {
