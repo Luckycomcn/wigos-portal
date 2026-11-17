@@ -62,6 +62,27 @@ assert.equal(url.searchParams.get('territories.territory.id'), 'CHE')
 assert.equal((await api.searchFacilities({ q: sample.id })).features[0].id, sample.id)
 assert.ok(calls[0].includes(`/items/${sample.id}?f=json`))
 assert.equal((await api.searchFacilities({ q: sample.id, bbox: [0, 0, 1, 1] })).numberMatched, 0)
+const beforeShortSearch = calls.length
+for (const q of ['a', 'AB', ' 0- ']) {
+  assert.equal((await api.searchFacilities({ q })).numberMatched, 0)
+}
+assert.equal(calls.length, beforeShortSearch, 'Short keywords must not request the catalogue')
+await api.searchFacilities({ q: ' 0-ABC ' })
+assert.ok(calls.at(-1).includes('/items/0-abc?f=json'), 'Any 0- prefix uses a lowercase exact lookup')
+globalThis.fetch = async (url) => {
+  calls.push(String(url))
+  return new Response(JSON.stringify({ features: [], numberMatched: 0, numberReturned: 0 }))
+}
+await api.searchFacilities({ q: "  O'HARE  ", types: ['landFixed'] })
+const titleSearchUrl = new URL(calls.at(-1))
+assert.equal(titleSearchUrl.searchParams.get('filter'), "properties.title LIKE 'o''hare'")
+assert.equal(titleSearchUrl.searchParams.has('q'), false)
+assert.equal(titleSearchUrl.searchParams.get('facilityType.id'), 'landFixed')
+globalThis.fetch = async (url, options) => {
+  calls.push(String(url))
+  if (options.signal.aborted) throw new DOMException('Aborted', 'AbortError')
+  return new Response(JSON.stringify(sample))
+}
 const controller = new AbortController()
 controller.abort()
 await assert.rejects(api.getFeature(sample.id, controller.signal), { name: 'AbortError' })
@@ -238,7 +259,12 @@ console.log('PASS: delayed snapshot responses cannot corrupt completed live fall
 const codes = modules.get(resolve('src/data/wmdrCodes.ts')).namespace
 assert.ok(codes.programAffiliations.length > 600)
 assert.equal(new Set(codes.programAffiliations.map(code => code.id)).size, codes.programAffiliations.length)
-for (const code of codes.programAffiliations) assert.equal(codes.programIdByTitle(code.title), code.id)
+for (const code of codes.programAffiliations) {
+  assert.equal(codes.programIdByTitle(code.id), code.id)
+  assert.ok(!code.title.startsWith(`${code.id} — `))
+}
+assert.equal(codes.programTitle('GCWCryoNet'), 'GCW CryoNet station')
+assert.equal(codes.programTitle('unrecognized-programme'), 'unrecognized-programme')
 assert.ok(codes.programAffiliations.some(code => code.id === 'GCWCryoNet'))
 
 // Original XML follows GOFC's source link without an XML proxy or CORS fetch.

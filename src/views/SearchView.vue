@@ -2,7 +2,8 @@
   <div class="station-browser">
     <aside class="criteria-card">
       <header><h2>{{ $t('search.criteria') }}</h2><el-button size="small" @click="reset">{{ $t('common.reset') }}</el-button></header>
-      <label class="criterion"><span>{{ $t('search.keyword') }}</span><el-input v-model="keyword" clearable :placeholder="$t('search.keywordPlaceholder')" :prefix-icon="Search" /></label>
+      <label class="criterion"><span>{{ $t('search.keyword') }}</span><el-input v-model="keyword" clearable @focus="keywordFocused = true" @blur="keywordFocused = false" :placeholder="$t('search.keywordPlaceholder')" :prefix-icon="Search" /></label>
+      <p v-if="keywordTooShort" role="status">{{ t('home.searchMinLength') }}</p>
       <label v-for="field in fields" :key="field.key" class="criterion">
         <span>{{ field.label }}</span>
         <el-select v-model="filters[field.key]" filterable clearable :placeholder="$t('common.all')" :aria-label="$t('search.filterAria')">
@@ -92,6 +93,8 @@ onMounted(async () => { programmeOptions.value = await loadProgramAffiliations()
 const route = useRoute()
 const { t } = useI18n()
 const keyword = ref(String(route.query.q || ''))
+const keywordFocused = ref(false)
+const keywordTooShort = computed(() => keywordFocused.value && Array.from(keyword.value.trim()).length < 3)
 const mode = ref<'map' | 'list'>(route.query.mode === 'list' ? 'list' : 'map')
 const filters = reactive<Record<FilterKey, string>>({ type: '', program: '', variable: '', ra: '', terr: '' })
 const rows = ref<Station[]>([])

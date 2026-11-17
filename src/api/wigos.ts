@@ -112,6 +112,8 @@ export interface WigosItemsQuery {
   bbox?: WigosBbox
   /** Free-text search. The catalogue matches whole title tokens, not substrings. */
   q?: string
+  /** CQL text filter expression. */
+  filter?: string
   datetime?: string
   /** Only scalar top-level fields are accepted by the service: title, created, updated. */
   properties?: string[]
@@ -135,6 +137,7 @@ export function buildItemsUrl(query: WigosItemsQuery = {}): string {
   if (query.offset != null && query.offset > 0) params.set('offset', String(Math.round(query.offset)))
   if (query.bbox) params.set('bbox', query.bbox.map((v) => Number(v.toFixed(6))).join(','))
   if (query.q?.trim()) params.set('q', query.q.trim())
+  if (query.filter) params.set('filter', query.filter)
   if (query.datetime?.trim()) params.set('datetime', query.datetime.trim())
   if (query.properties?.length) params.set('properties', query.properties.join(','))
   if (query.skipGeometry) params.set('skipGeometry', 'true')
@@ -625,9 +628,13 @@ export async function searchFacilities(params: FacilitySearchParams = {}): Promi
   const variables = (params.variables ?? []).map(String).filter(Boolean)
   const regions = params.regions?.filter(Boolean) ?? []
 
-  // Identifiers are feature ids, not indexed title tokens.
-  const candidate = params.q?.trim()
-  if (candidate && /^\d+-\d+-\d+-\S+$/.test(candidate)) {
+  const candidate = params.q?.trim().toLowerCase()
+  // Empty keywords allow browsing by the other advanced criteria.
+  if (candidate && Array.from(candidate).length < 3) {
+    return { features: [], filteredFeatures: [], numberMatched: 0, numberReturned: 0 }
+  }
+  // Every 0- prefix denotes an exact WSI lookup, including partial identifiers.
+  if (candidate?.startsWith('0-')) {
     const feature = await getFeature(candidate, params.signal)
     const coordinates = feature ? featureCoordinates(feature) : null
     const inBbox = !params.bbox || (coordinates != null &&
@@ -651,7 +658,7 @@ export async function searchFacilities(params: FacilitySearchParams = {}): Promi
     limit: params.limit ?? 25,
     offset: params.offset,
     bbox: params.bbox,
-    q: params.q,
+    filter: candidate ? `properties.title LIKE '${candidate.replace(/'/g, "''")}'` : undefined,
     sortby: params.sortby ?? 'title',
     properties: params.full === false ? ['title'] : undefined,
     filters,

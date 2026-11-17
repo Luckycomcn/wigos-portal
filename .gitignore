@@ -34,4 +34,5 @@ tmp/
 *.key
 
 delivery/
+/output/
 docs/

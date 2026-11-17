@@ -137,7 +137,8 @@ export function programTitle(id?: string | null): string {
 
 export function programIdByTitle(title: string): string | undefined {
   const needle = title.trim().toLowerCase()
-  return programAffiliations.find((p) => p.title.toLowerCase() === needle || p.id.toLowerCase() === needle)?.id
+  return programAffiliations.find((p) => p.id.toLowerCase() === needle)?.id
+    ?? programAffiliations.find((p) => p.title.toLowerCase() === needle)?.id
 }
 
 interface VariableNode {

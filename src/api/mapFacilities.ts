@@ -149,7 +149,7 @@ async function liveMap(query: FacilitySearchParams, progress: MapProgress): Prom
   let loaded = 0, total = 0
   const missing = new Set<string>()
   await pool(branches, async filters => {
-    const base: WigosItemsQuery = { bbox: box, q: query.q, filters, properties: ['title'], sortby: 'title', signal: query.signal }
+    const base: WigosItemsQuery = { bbox: box, filter: query.q?.trim() ? `properties.title LIKE '${query.q.trim().toLowerCase().replace(/'/g, "''")}'` : undefined, filters, properties: ['title'], sortby: 'title', signal: query.signal }
     const first = await compactPage({ ...base, limit: 1000 })
     const expected = first.numberMatched
     if (!Number.isInteger(expected) || expected < 0) throw new Error('Invalid catalogue map count')
@@ -192,7 +192,7 @@ async function load(query: FacilitySearchParams, progress: MapProgress): Promise
     try { return await typeSnapshot(query, progress) }
     catch { abortCheck(query.signal); return liveMap(query, progress) }
   }
-  if (query.q?.trim() && /^\d+-\d+-\d+-\S+$/.test(query.q.trim())) {
+  if (query.q?.trim() && (Array.from(query.q.trim()).length < 3 || query.q.trim().toLowerCase().startsWith('0-'))) {
     const result = await searchFacilities({ ...query, limit: 1, offset: 0 })
     progress(result.features, result.features.length, result.numberMatched)
     return { features: result.features, unmapped: 0 }

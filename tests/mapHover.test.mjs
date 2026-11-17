@@ -32,8 +32,14 @@ console.log('PASS: uncached vector tile immediately opens summary and receives f
 const originalGet = hit.get
 hit.get = key => key === 'count' ? 42 : originalGet(key)
 context.lastMove = 0
-context.getFeature = () => { throw new Error('Aggregated overview points must not fetch a representative station detail') }
+context.randomGroupStation = async () => '0-random-member'
+context.getFeature = id => { requested = id; return Promise.resolve({id, properties:{title:'Random member'}}) }
 context.onPointerMove({ pixel: [30,40] }); await callback()
-assert.equal(context.hover.value.count, 42)
-assert.equal(context.hover.value.wigosId, '')
-console.log('PASS: overview groups show a count without misleading station details')
+await new Promise(resolve=>setImmediate(resolve))
+assert.equal(requested, '0-random-member')
+assert.equal(context.hover.value.title, 'Random member')
+assert.equal(context.hover.value.wigosId, '0-random-member')
+context.lastMove = 0
+context.randomGroupStation = () => { throw Error('Same hover must retain its chosen station') }
+context.onPointerMove({pixel:[30,40]}); await callback()
+console.log('PASS: overview groups show a random member and retain it during the same hover')

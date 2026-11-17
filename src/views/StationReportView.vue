@@ -110,14 +110,14 @@
         <div v-for="group in groupedObservations" :key="group.category" class="tree">
           <div class="t1">{{ group.category }}</div>
           <div v-for="(item, observationIndex) in group.items" :key="observationIndex" class="t2">
-            ▸{{ item.variable }} <span class="tag" v-if="item.geometry">({{ item.geometry }})</span>
+            ▸{{ item.variable }} <span class="tag" v-if="item.geometry">({{ metadataLabel('geometry', item.geometry) }})</span>
             <div class="t3">
-              {{ $t('stationReport.programmesLabel') }} {{ item.programs.map((p) => p.title === p.id ? p.id : `${p.title} (${p.id})`).join(', ') || '—' }}
+              {{ $t('stationReport.programmesLabel') }} {{ item.programs.map((p) => p.title).join(', ') || '—' }}
               <span v-if="item.variableId != null"> · {{ $t('stationReport.observedVariable') }}: {{ item.variable }}</span>
             </div>
             <div v-for="(config, index) in item.configurations" :key="config.id || index" class="t4">
               {{ $t('stationReport.deployments') }}: {{ config.from || '—' }} → {{ config.to === '..' ? $t('stationReport.openEnded') : config.to || '—' }}
-              <span v-if="config.method"> · {{ $t('stationReport.method') }} {{ config.method }}</span>
+              <span v-if="config.method"> · {{ $t('stationReport.method') }} {{ metadataLabel('method', config.method) }}</span>
             </div>
           </div>
         </div>
@@ -129,11 +129,13 @@
         <table class="grid">
           <tr><th>{{ $t('stationReport.contactRole') }}</th><th>{{ $t('stationReport.organization') }}</th><th>{{ $t('stationReport.mainContact') }}</th><th>{{ $t('stationReport.contactEmail') }}</th></tr>
           <tr v-for="(contact, index) in report.contacts" :key="index">
-            <td>{{ contact.roles.join(', ') }}</td>
+            <td>{{ contact.roles.map((role) => metadataLabel('role', role)).join(', ') }}</td>
             <td>{{ contact.organization || '—' }}</td>
             <td>{{ contact.name || '—' }}</td>
             <td>
-              <a v-for="email in contact.emails" :key="email" :href="email.startsWith('http') ? email : `mailto:${email}`"><p>{{ email }}</p></a>
+              <ul v-if="contact.emails.length" class="contact-emails">
+                <li v-for="email in contact.emails" :key="email"><a :href="email.startsWith('http') ? email : `mailto:${email}`">{{ email }}</a></li>
+              </ul>
               <span v-if="!contact.emails.length">—</span>
             </td>
           </tr>
@@ -178,7 +180,12 @@ import { loadAmap, toGcj02 } from '../utils/amap'
 import { toLonLat } from 'ol/proj'
 import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
+const { t, te } = useI18n()
+
+function metadataLabel(group: 'role' | 'geometry' | 'method', code: string): string {
+  const key = `wmdrLabels.${group}.${code}`
+  return te(key) ? t(key) : code
+}
 const downloadError = ref('')
 const route = useRoute()
 const wid = computed(() => String(route.params.wigosId || route.params.id || ''))
@@ -590,6 +597,14 @@ table {
   padding: 6px 10px;
   margin: 10px;
   color: #333;
+}
+
+.contact-emails {
+  margin: 0;
+  padding-left: 18px;
+  list-style: disc;
+
+  li + li { margin-top: 6px; }
 }
 
 .links {

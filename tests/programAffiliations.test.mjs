@@ -29,6 +29,7 @@ async function scenario({ fail, invalid, small } = {}) {
     // 100 register entries + GCWCryoNet from the live response + the retained legacy code.
     assert.equal(a.length, 102)
     assert.equal(api.programIdByTitle('New programme 1'), 'NEW1')
+    assert.equal(api.programIdByTitle('NEW1'), 'NEW1')
     assert.equal(api.programTitle('GCWCryoNet'), 'Updated CryoNet')
     assert.ok(a.some(c => c.id === 'OceanSITES'), 'legacy OceanSITES must survive a live refresh')
   }

@@ -90,6 +90,7 @@ const examples = computed(() => [
   color: #2c3f50;
   line-height: 1.65;
   font-size: 14px;
+  margin: 0 auto;
 }
 
 h1 {

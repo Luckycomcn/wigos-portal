@@ -98,10 +98,11 @@ export default {
     "station": "台站"
   },
   "home": {
+    "searchMinLength": "请输入至少 3 个字符。",
     "searchRemoteError": "目录查询失败，请重试。当前未显示示例搜索结果。",
     "typeCountError": "无法获取实际站点类型数量。",
     "title": "欢迎使用 WIGOS 元数据系统门户",
-    "desc": "WIGOS 元数据系统门户提供全球气象观测台站信息，并支持面向 WIGOS 的搜索、地图与数据管理。",
+    "desc": "提供全球气象观测台站信息，支持 WIGOS 台站搜索、地图浏览和元数据下载。",
     "searchPlaceholder": "按台站名称、别名或 WIGOS ID 搜索...",
     "search": "搜索",
     "advancedSearch": "高级搜索",
@@ -112,7 +113,7 @@ export default {
       "countriesNote": "WMO 代码表条目",
       "observationTypes": "站点类型",
       "observationTypesNote": "（记录的 WMDR 站点类型，不含 unknown）",
-      "lastUpdate": "最新记录创建日期",
+      "lastUpdate": "最新添加的记录",
       "lastUpdateNote": "GOFC 记录创建日期"
     },
     "hint": {
@@ -178,6 +179,45 @@ export default {
     "guideNote": "业务 API 由目录通过 OGC API - Records 提供；本门户仅保存页面和导出文件。",
     "demoNote": "已连接真实目录。批量导出按每页 250 条获取，可随时取消。生成后下载与预览使用同一份数据。"
   },
+  "wmdrLabels": {
+  "role": {
+    "custodian": "保管方",
+    "owner": "所有者",
+    "user": "使用者",
+    "distributor": "分发方",
+    "originator": "发起方",
+    "pointOfContact": "联络人",
+    "principalInvestigator": "首席研究员",
+    "processor": "处理方",
+    "publisher": "发布方",
+    "author": "作者",
+    "resourceProvider": "资源提供方",
+    "unknown": "未知",
+    "inapplicable": "不适用",
+    "notApplicable": "不适用"
+  },
+  "geometry": {
+    "point": "点",
+    "area": "面",
+    "volume": "体",
+    "line": "线",
+    "trajectory": "轨迹",
+    "profile": "剖面",
+    "grid": "网格",
+    "unknown": "未知",
+    "inapplicable": "不适用",
+    "notApplicable": "不适用"
+  },
+  "method": {
+    "unknown": "未知",
+    "inapplicable": "不适用",
+    "notApplicable": "不适用",
+    "automatic": "自动观测",
+    "manual": "人工观测",
+    "inSitu": "原位观测",
+    "remoteSensing": "遥感观测"
+  }
+},
   "stationReport": {
     "downloadError": "下载失败：{message}，请重试。",
     "territoryAssignments": "国家 / 地区归属",
