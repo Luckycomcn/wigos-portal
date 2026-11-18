@@ -68,7 +68,7 @@ for (const q of ['a', 'AB', ' 0- ']) {
 }
 assert.equal(calls.length, beforeShortSearch, 'Short keywords must not request the catalogue')
 await api.searchFacilities({ q: ' 0-ABC ' })
-assert.ok(calls.at(-1).includes('/items/0-abc?f=json'), 'Any 0- prefix uses a lowercase exact lookup')
+assert.ok(calls.at(-1).includes('/items/0-ABC?f=json'), 'Exact WSI lookup preserves identifier case')
 globalThis.fetch = async (url) => {
   calls.push(String(url))
   return new Response(JSON.stringify({ features: [], numberMatched: 0, numberReturned: 0 }))

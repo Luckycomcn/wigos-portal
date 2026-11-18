@@ -104,7 +104,7 @@ export default {
     "typeCountError": "Unable to retrieve the populated facility type count.",
     "title": "Welcome to WIGOS Metadata System Portal",
     "desc": "Provides information on meteorological observing stations worldwide and supports WIGOS station searches, map browsing and metadata downloads.",
-    "searchPlaceholder": "Search by station name, alias or WIGOS ID...",
+    "searchPlaceholder": "Search by station name or WIGOS ID...",
     "search": "Search",
     "advancedSearch": "Advanced Search",
     "stats": {
@@ -125,7 +125,7 @@ export default {
   "search": {
     "criteria": "Criteria",
     "keyword": "Keyword / WIGOS station identifier",
-    "keywordPlaceholder": "Search by station name, alias or WIGOS ID...",
+    "keywordPlaceholder": "Search by station name or WIGOS ID...",
     "results": "Results",
     "remoteCount": "{count} records in the WMO Resource Catalogue",
     "remoteNote": "Showing {count} of {total} matching records · catalogue time stamp {date}",
@@ -285,6 +285,7 @@ export default {
     "email": "Email"
   },
   "map": {
+    "clusterCount": "{count} stations",
     "filteredSnapshot": "Filtered map snapshot: {date} · {count} stations in this view (dense points grouped)",
     "overviewSnapshot": "Station overview (dense points grouped), snapshot: {date}",
     "overviewUnmapped": "{count} records without valid point coordinates",

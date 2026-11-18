@@ -102,7 +102,7 @@ async function doSearch() {
   searchController?.abort()
   const controller = new AbortController()
   searchController = controller
-  const raw = quickTerm.value.trim().toLowerCase()
+  const raw = quickTerm.value.trim()
   focusedStation.value = null
   searchHint.value = ''
   searchError.value = false

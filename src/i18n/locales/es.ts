@@ -94,7 +94,7 @@ export default {
   "home": {
     "title": "Bienvenido al portal del sistema de metadatos WIGOS",
     "desc": "Ofrece información sobre estaciones de observación meteorológica de todo el mundo y permite buscar estaciones WIGOS, consultar mapas y descargar metadatos.",
-    "searchPlaceholder": "Buscar por nombre, alias o identificador WIGOS...",
+    "searchPlaceholder": "Buscar por nombre de estación o identificador WIGOS...",
     "search": "Buscar",
     "advancedSearch": "Búsqueda avanzada",
     "stats": {
@@ -118,7 +118,7 @@ export default {
   "search": {
     "criteria": "Criterios",
     "keyword": "Palabra clave / identificador de estación WIGOS",
-    "keywordPlaceholder": "Nombre, alias o 0-20000-0-60415",
+    "keywordPlaceholder": "Buscar por nombre de estación o identificador WIGOS...",
     "results": "Resultados",
     "remoteCount": "{count} registros en el catálogo de recursos de la OMM",
     "remoteNote": "Se muestran {count} de {total} registros coincidentes · fecha del catálogo {date}",
@@ -174,6 +174,7 @@ export default {
     "demoNote": "Conectado al catálogo en línea. Las exportaciones obtienen 250 registros por página y pueden cancelarse. La descarga utiliza los mismos datos que la vista previa."
   },
   "map": {
+    "clusterCount": "{count} estaciones",
     "filteredSnapshot": "Mapa filtrado: instantánea del {date} · {count} estaciones en esta vista (puntos densos agrupados)",
     "overviewSnapshot": "Vista general de estaciones (puntos densos agrupados), instantánea: {date}",
     "overviewUnmapped": "{count} registros sin coordenadas puntuales válidas",
