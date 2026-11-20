@@ -133,10 +133,11 @@
             <td>{{ contact.organization || '—' }}</td>
             <td>{{ contact.name || '—' }}</td>
             <td>
-              <ul v-if="contact.emails.length" class="contact-emails">
+              <ul v-if="contact.emails.length > 1" class="contact-emails">
                 <li v-for="email in contact.emails" :key="email"><a :href="email.startsWith('http') ? email : `mailto:${email}`">{{ email }}</a></li>
               </ul>
-              <span v-if="!contact.emails.length">—</span>
+              <a v-else-if="contact.emails.length === 1" :href="contact.emails[0]!.startsWith('http') ? contact.emails[0] : `mailto:${contact.emails[0]}`">{{ contact.emails[0] }}</a>
+              <span v-else>—</span>
             </td>
           </tr>
           <tr v-if="!report.contacts.length"><td colspan="4">{{ $t('stationReport.noContacts') }}</td></tr>

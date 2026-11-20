@@ -628,12 +628,12 @@ export async function searchFacilities(params: FacilitySearchParams = {}): Promi
   const variables = (params.variables ?? []).map(String).filter(Boolean)
   const regions = params.regions?.filter(Boolean) ?? []
 
-  const candidate = params.q?.trim().toLowerCase()
+  const candidate = params.q?.trim()
   // Empty keywords allow browsing by the other advanced criteria.
   if (candidate && Array.from(candidate).length < 3) {
     return { features: [], filteredFeatures: [], numberMatched: 0, numberReturned: 0 }
   }
-  // Every 0- prefix denotes an exact WSI lookup, including partial identifiers.
+  // Every 0- prefix denotes an exact WSI lookup; identifiers are case-sensitive.
   if (candidate?.startsWith('0-')) {
     const feature = await getFeature(candidate, params.signal)
     const coordinates = feature ? featureCoordinates(feature) : null
@@ -658,7 +658,7 @@ export async function searchFacilities(params: FacilitySearchParams = {}): Promi
     limit: params.limit ?? 25,
     offset: params.offset,
     bbox: params.bbox,
-    filter: candidate ? `properties.title LIKE '${candidate.replace(/'/g, "''")}'` : undefined,
+    filter: candidate ? `properties.title LIKE '${candidate.toLowerCase().replace(/'/g, "''")}'` : undefined,
     sortby: params.sortby ?? 'title',
     properties: params.full === false ? ['title'] : undefined,
     filters,

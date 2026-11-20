@@ -13,6 +13,7 @@ const context = {
   mapRef: ref({ forEachFeatureAtPixel(pixel, visit, options) { assert.equal(options.hitTolerance, 6); return visit(hit) }, getTargetElement: () => ({ style: {} }) }),
   isOverPopup: ref(false), lastMove: 0, pendingTimer: 0, hideTimer: 0,
   window: { setTimeout(fn) { callback = fn; return 1 }, clearTimeout() {} },
+  t: (key, {count}) => `${count} stations`,
   Date, hover: ref(null), hoverKey: '', popupPos: ref({}),
   detailCache: {}, liveFeatures: ref([]), downloadError: ref(''),
   clampPopup: (x,y) => ({x,y}), facilityTypeTitle: () => 'Land fixed',
@@ -32,14 +33,9 @@ console.log('PASS: uncached vector tile immediately opens summary and receives f
 const originalGet = hit.get
 hit.get = key => key === 'count' ? 42 : originalGet(key)
 context.lastMove = 0
-context.randomGroupStation = async () => '0-random-member'
-context.getFeature = id => { requested = id; return Promise.resolve({id, properties:{title:'Random member'}}) }
+context.getFeature = () => { throw new Error('Aggregated points must not fetch individual station details') }
 context.onPointerMove({ pixel: [30,40] }); await callback()
-await new Promise(resolve=>setImmediate(resolve))
-assert.equal(requested, '0-random-member')
-assert.equal(context.hover.value.title, 'Random member')
-assert.equal(context.hover.value.wigosId, '0-random-member')
-context.lastMove = 0
-context.randomGroupStation = () => { throw Error('Same hover must retain its chosen station') }
-context.onPointerMove({pixel:[30,40]}); await callback()
-console.log('PASS: overview groups show a random member and retain it during the same hover')
+assert.equal(context.hover.value.count, 42)
+assert.equal(context.hover.value.title, '42 stations')
+assert.equal(context.hover.value.wigosId, '')
+console.log('PASS: overview groups show counts without requesting individual station details')

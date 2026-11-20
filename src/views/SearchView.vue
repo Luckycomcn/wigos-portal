@@ -287,6 +287,18 @@ h2 { display: inline; margin: 0; padding: 0; border: 0; text-transform: uppercas
 .criterion { display: block; margin-top: 17px; font-weight: 400; }
 .criterion > span { display: block; text-transform: uppercase; font-size: 11px; margin-bottom: 7px; color: #718194; }
 .criterion :deep(.el-select) { width: 100%; }
+.criterion :deep(.el-input),
+.criterion :deep(.el-select) {
+  --el-border-color: #303133;
+  --el-border-color-hover: #303133;
+  --el-text-color-placeholder: #303133;
+  --el-text-color-disabled: #303133;
+  --el-input-border-color: #303133;
+  --el-input-hover-border-color: #303133;
+  --el-input-placeholder-color: #303133;
+  --el-input-icon-color: #303133;
+}
+.criterion :deep(.el-select__caret) { color: #303133; }
 .mode-switch { display: inline-flex; padding: 3px; border: 1px solid #e2e9ed; border-radius: 24px; white-space: nowrap; }
 .mode-switch button { display: inline-flex; gap: 5px; align-items: center; justify-content: center; border: 0; background: transparent; border-radius: 20px; padding: 6px 12px; color: #647588; font-size: 12px; }
 .mode-switch button.active { background: var(--oscar-theme-soft); color: var(--search-accent); box-shadow: inset 0 0 0 1px #b3cee6; }

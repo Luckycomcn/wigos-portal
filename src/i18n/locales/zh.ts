@@ -103,7 +103,7 @@ export default {
     "typeCountError": "无法获取实际站点类型数量。",
     "title": "欢迎使用 WIGOS 元数据系统门户",
     "desc": "提供全球气象观测台站信息，支持 WIGOS 台站搜索、地图浏览和元数据下载。",
-    "searchPlaceholder": "按台站名称、别名或 WIGOS ID 搜索...",
+    "searchPlaceholder": "按台站名称或 WIGOS 标识符搜索...",
     "search": "搜索",
     "advancedSearch": "高级搜索",
     "stats": {
@@ -124,7 +124,7 @@ export default {
   "search": {
     "criteria": "筛选条件",
     "keyword": "关键词 / WIGOS 台站标识符",
-    "keywordPlaceholder": "台站名称、别名或 0-20000-0-60415",
+    "keywordPlaceholder": "按台站名称或 WIGOS 标识符搜索...",
     "results": "结果",
     "remoteCount": "WMO 资源目录中共 {count} 条记录",
     "remoteNote": "显示 {count} / {total} 条匹配记录 · 目录时间戳 {date}",
@@ -284,6 +284,7 @@ export default {
     "email": "邮箱"
   },
   "map": {
+    "clusterCount": "{count} 个站点",
     "filteredSnapshot": "筛选地图快照：{date} · 当前视野 {count} 个站点（密集点聚合）",
     "overviewSnapshot": "站点概览（密集点聚合），快照更新：{date}",
     "overviewUnmapped": "{count} 条记录无有效点坐标",
