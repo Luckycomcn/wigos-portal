@@ -5,7 +5,7 @@
 Please do **not** open a public issue for a security problem. Report it privately so it can be fixed before details are disclosed:
 
 - use GitHub's "Report a vulnerability" (private vulnerability reporting) on this repository, or
-- send a direct message to a repository maintainer.
+- email the repository maintainer at newoscar_cma@163.com to arrange a private report.
 
 Include the affected version/commit, the page or endpoint, reproduction steps, the impact, and any suggested mitigation. You will receive an acknowledgement once the report has been reviewed. Please follow the [contribution guidelines](CONTRIBUTING.md) when submitting a fix.
 
