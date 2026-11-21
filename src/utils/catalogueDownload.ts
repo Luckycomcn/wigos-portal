@@ -32,13 +32,18 @@ export async function downloadCatalogueRecord(id: string, format: 'json' | 'xml'
     const link = record.links?.find((item) => item.rel === 'original' && /xml/i.test(item.type ?? ''))
     if (!link) throw new Error('No original WMDR XML link provided')
     const source = new URL(link.href)
+    // Link directly to the source (currently oscar.wmo.int) instead of proxying
+    // /wmdr-source. The catalogue owns this URL: when the OAI endpoint is
+    // replaced by the renewal, the record's original link moves to the new
+    // archive and this code keeps working without a hardcoded host or path.
     if (source.protocol !== 'https:') throw new Error('Unsupported WMDR source')
-    // Follow the catalogue link directly, including future archive locations.
     const anchor = document.createElement('a')
     anchor.href = source.href
     anchor.target = '_blank'
     anchor.rel = 'noopener noreferrer'
+    document.body.appendChild(anchor)
     anchor.click()
+    anchor.remove()
     return
   }
   const content = JSON.stringify(record, null, 2)

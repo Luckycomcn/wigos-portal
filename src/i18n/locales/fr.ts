@@ -19,7 +19,6 @@ export default {
     "brandSub3": "Portail du système"
   },
   "footer": {
-    "version": "Version : {version}",
     "disclaimer": "Les images et les données du catalogue restent la propriété de leurs fournisseurs. Ce portail ne représente pas l’OMM et ne bénéficie pas de son approbation.",
     "attribution": "Portail de démonstration indépendant"
   },
@@ -192,7 +191,7 @@ export default {
     "zoomOut": "Zoom arrière",
     "resetView": "Réinitialiser la vue",
     "basemap": "Fond de carte",
-    "basemapOsm": "International · OpenStreetMap",
+    "basemapOsm": "International · OpenFreeMap",
     "basemapAmap": "Chine · AMap",
     "basemapTianditu": "Chine · Tianditu",
     "basemapMissingKey": "Demandez à votre administrateur de configurer les identifiants de ce fond de carte.",

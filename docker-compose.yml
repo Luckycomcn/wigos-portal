@@ -1,0 +1,29 @@
+# Source build; configure keys with --env-file deploy.env.
+services:
+  wigos-portal:
+    image: wigos-portal:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_TIANDITU_KEY: ${TIANDITU_KEY:-}
+        VITE_AMAP_KEY: ${AMAP_KEY:-}
+        VITE_AMAP_SECURITY_JS_CODE: ${AMAP_SECURITY_JS_CODE:-}
+        VITE_AMAP_SERVICE_HOST: ${AMAP_SERVICE_HOST:-}
+        VITE_WIGOS_GOFC_URL: ${WIGOS_GOFC_URL:-https://wmo-resource-catalogue.labs.wis2dev.io}
+    environment:
+      # Runtime configuration takes precedence over build-time defaults.
+      TIANDITU_KEY: ${TIANDITU_KEY:-}
+      AMAP_KEY: ${AMAP_KEY:-}
+      AMAP_SECURITY_JS_CODE: ${AMAP_SECURITY_JS_CODE:-}
+      AMAP_SERVICE_HOST: ${AMAP_SERVICE_HOST:-}
+      WIGOS_GOFC_URL: ${WIGOS_GOFC_URL:-}
+    ports:
+      - "80:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s

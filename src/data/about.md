@@ -4,7 +4,7 @@
 
 WIGOS metadata is also available using geospatial Web Application Programming Interfaces (APIs) adhering to international standards. They are designed to support machine to machine interaction, and can be used in Web, mobile or desktop applications and tools.
 
-The WIGOS Global Observing Facility Catalogue (GOF) supports the [OGC API - Records](https://ogcapi.ogc.org/records) standard which facilitates interoperable discovery of observing facility metadata. OGC standards play an important role in lowering the barrier to weather/climate/water data exchange as part of the WMO Information System and are supported by numerous off the shelf open source and commercial tools.
+The WIGOS Global Observing Facility Catalogue (GOFC) supports the [OGC API - Records](https://ogcapi.ogc.org/records) standard which facilitates interoperable discovery of observing facility metadata. OGC standards play an important role in lowering the barrier to weather/climate/water data exchange as part of the WMO Information System and are supported by numerous off the shelf open source and commercial tools.
 
 The WIGOS GOFC API is available at {{ VITE_WIGOS_GOFC_URL }}. The API provides discovery, access, visualization and processing functionality to all WIGOS metadata, as well as online services processes for metadata validation, reporting and quality assessment.
 
@@ -52,6 +52,6 @@ The WIGOS GOFC is powered by [pygeoapi](https://pygeoapi.io), a Reference Implem
 
 ## Tools
 
-The following GitHub examples provide high level access and workflow examples of integrating WOUDC Web services:
+The following GitHub examples provide high level access and workflow examples of integrating WIGOS Web services:
 
 - [pywmdr](https://github.com/wmo-im/pywmdr): pywmdr provides validation and quality assessment capabilities for the WMO WIGOS Metadata Representation (WMDR2)

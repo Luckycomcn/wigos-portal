@@ -20,7 +20,6 @@ export default {
   },
   "footer": {
     "disclaimer": "Images and catalogue records belong to their respective providers. This portal does not represent WMO or imply its endorsement.",
-    "version": "Version: {version}",
     "attribution": "Independent demonstration portal"
   },
   "menu": {
@@ -303,7 +302,7 @@ export default {
     "zoomOut": "Zoom out",
     "resetView": "Reset view",
     "basemap": "Basemap",
-    "basemapOsm": "International · OpenStreetMap",
+    "basemapOsm": "International · OpenFreeMap",
     "basemapAmap": "China · AMap",
     "basemapTianditu": "China · Tianditu",
     "basemapMissingKey": "Ask your administrator to configure this basemap’s credentials.",

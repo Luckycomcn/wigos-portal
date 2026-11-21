@@ -19,7 +19,6 @@ export default {
     "brandSub3": "Portal del sistema"
   },
   "footer": {
-    "version": "Versión: {version}",
     "disclaimer": "Las imágenes y los registros del catálogo pertenecen a sus proveedores. Este portal no representa a la OMM ni implica su respaldo.",
     "attribution": "Portal de demostración independiente"
   },
@@ -192,7 +191,7 @@ export default {
     "zoomOut": "Alejar",
     "resetView": "Restablecer vista",
     "basemap": "Mapa base",
-    "basemapOsm": "Internacional · OpenStreetMap",
+    "basemapOsm": "Internacional · OpenFreeMap",
     "basemapAmap": "China · AMap",
     "basemapTianditu": "China · Tianditu",
     "basemapMissingKey": "Solicite al administrador que configure las credenciales de este mapa base.",

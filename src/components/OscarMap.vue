@@ -14,7 +14,14 @@
         @mouseenter="onPopupEnter"
         @mouseleave="onPopupLeave"
       >
-        <div class="identify-popup__title"><router-link target="_blank" rel="noopener noreferrer" v-if="!hover.count" :to="{ name: 'stationReportDetails', params: { wigosId: hover.wigosId } }">{{ hover.title }}</router-link><span v-else>{{ hover.title }}</span></div>
+        <a
+          v-if="!hover.count && hover.wigosId"
+          class="identify-popup__title identify-popup__title-link"
+          :href="reportHref(hover.wigosId)"
+          target="_blank"
+          rel="noopener noreferrer"
+        >{{ hover.title }}</a>
+        <div v-else class="identify-popup__title">{{ hover.title }}</div>
         <div v-if="hover.count" class="identify-popup__body">{{ t('map.overviewZoomHint') }}</div>
         <div v-else class="identify-popup__body">
           <div><b>{{ $t('map.wigosId') }}:</b><br />{{ hover.wigosId }}</div>
@@ -34,10 +41,12 @@
               <button type="button" @click="downloadWmdrV2">{{ $t('stationReport.wmdrV2') }}</button>
             </span>
           </span>
-          <router-link target="_blank" rel="noopener noreferrer"
+          <a
             class="btn btn-default btn-xs"
-            :to="{ name: 'stationReportDetails', params: { wigosId: hover.wigosId } }"
-          >{{ $t('map.stationReport') }}</router-link>
+            :href="reportHref(hover.wigosId)"
+            target="_blank"
+            rel="noopener noreferrer"
+          >{{ $t('map.stationReport') }}</a>
         </div>
       </div>
 
@@ -75,9 +84,9 @@
     <p v-if="overviewActive" class="overview-note" role="status">{{ t('map.overviewSnapshot', { date: overview.generatedAt.slice(0, 10) }) }}<span v-if="overview.unmapped"> · {{ t('map.overviewUnmapped', { count: overview.unmapped }) }}</span></p>
     <p v-else-if="filteredSnapshotDate" class="overview-note" role="status">{{ t('map.filteredSnapshot', { date: filteredSnapshotDate, count: matchedCount.toLocaleString() }) }}<span v-if="filteredUnmapped"> · {{ t('map.overviewUnmapped', { count: filteredUnmapped }) }}</span></p>
     <div v-if="selected" class="oscar-infobox">
-      <strong><router-link target="_blank" rel="noopener noreferrer" :to="{ name: 'stationReportDetails', params: { wigosId: selected.wigosId } }">{{ selected.name }}</router-link></strong>
+      <strong><a :href="reportHref(selected.wigosId)" target="_blank" rel="noopener noreferrer">{{ selected.name }}</a></strong>
       <div>{{ selected.wigosId }} · {{ selected.type }}</div>
-      <router-link target="_blank" rel="noopener noreferrer" :to="{ name: 'stationReportDetails', params: { wigosId: selected.wigosId } }">{{ $t('map.openStationReport') }}</router-link>
+      <a :href="reportHref(selected.wigosId)" target="_blank" rel="noopener noreferrer">{{ $t('map.openStationReport') }}</a>
     </div>
   </div>
 </template>
@@ -88,9 +97,11 @@ import { filterCountry, filterType, filterPrograms, filterStatuses, focusedStati
 import Map from 'ol/Map'
 import View from 'ol/View'
 import TileLayer from 'ol/layer/Tile'
-import OSM from 'ol/source/OSM'
+import type LayerGroup from 'ol/layer/Group'
+import type { Locale } from '../i18n'
 import { amapConfigured, loadAmap, toGcj02 } from '../utils/amap'
 import { tiandituKey, tiandituSource } from '../utils/tianditu'
+import { createLocalizedLayer, type WorldStyleKey } from '../utils/localizedBasemap'
 import VectorLayer from 'ol/layer/Vector'
 import VectorSource from 'ol/source/Vector'
 import VectorTileLayer from 'ol/layer/VectorTile'
@@ -110,6 +121,7 @@ import type { Station, StationDomain } from '../data/stations'
 import { domainColors } from '../data/stations'
 import { downloadCatalogueRecord } from '../utils/catalogueDownload'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { WORLD_ISLANDS, WORLD_LAND } from '../data/worldLand'
 import {
   WIGOS_TILES_URL,
@@ -166,6 +178,12 @@ const isOverPopup = ref(false)
 const downloading = ref(false)
 const downloadError = ref('')
 const { t, locale } = useI18n()
+const router = useRouter()
+
+/** Station reports open in a new tab; hash routing resolves relative to the deployed base. */
+function reportHref(wigosId: string): string {
+  return router.resolve({ name: 'stationReportDetails', params: { wigosId } }).href
+}
 const dlOpen = ref(false)
 import { selectedBasemap, rememberBasemap, type Basemap } from '../utils/basemap'
 const DEFAULT_CENTER = [0, 0]
@@ -173,10 +191,14 @@ const WORLD_EXTENT = transformExtent([-180, -85, 180, 85], 'EPSG:4326', 'EPSG:38
 const DEFAULT_ZOOM = 2.2
 const CHINA_CENTER: [number, number] = [104, 35]
 const CHINA_ZOOM = 4
+// Start from 'osm' as the applied baseline; onMounted applies selectedBasemap
+// (the OpenFreeMap world basemap) through selectBasemap so it is loaded.
 const basemap = ref<Basemap>('osm')
 const basemapStatus = ref('')
 const amapEl = ref<HTMLDivElement | null>(null)
-const osmLayer = new TileLayer({ source: new OSM({ wrapX: false }) })
+/** Locale-aware vector world basemaps, one per menu entry, created on demand. */
+const worldLayers: Partial<Record<WorldStyleKey, LayerGroup>> = {}
+const worldVersions: Partial<Record<WorldStyleKey, number>> = {}
 const tiandituLayers = (['vec', 'cva'] as const).map((layer) => new TileLayer({
   source: tiandituSource(layer), visible: false,
 }))
@@ -731,7 +753,7 @@ onMounted(() => {
     pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
     controls: [],
     interactions: [],
-    layers: [gridLayer, landLayer, osmLayer, ...tiandituLayers],
+    layers: [landLayer, gridLayer, ...tiandituLayers],
     view: map.getView(),
   })
   map.on('singleclick', async (evt) => {
@@ -811,6 +833,11 @@ watch(() => props.visibleStations, () => {
   dlOpen.value = false
 })
 
+watch(locale, () => {
+  // Every world basemap that has been created so far must follow the UI language.
+  for (const kind of Object.keys(worldLayers) as WorldStyleKey[]) void loadWorldLayer(kind)
+})
+
 watch(() => props.mapQuery, () => {
   viewportController?.abort()
   loadSeq++
@@ -876,13 +903,63 @@ function resetView() {
   })
 }
 
+/**
+ * Load (or reload on language change) one of the locale-aware vector basemaps.
+ * The vector style replaces the old raster OpenStreetMap layer: raster tiles
+ * have the place names baked into the image, so they can never follow the UI
+ * language.
+ */
+async function loadWorldLayer(kind: WorldStyleKey) {
+  const version = (worldVersions[kind] ?? 0) + 1
+  worldVersions[kind] = version
+  let loaded: Awaited<ReturnType<typeof createLocalizedLayer>>
+  try {
+    loaded = await createLocalizedLayer(locale.value as Locale, kind)
+  } catch {
+    if (version === worldVersions[kind] && basemap.value === kind) {
+      // Offline land polygons are the only thing we can still show.
+      landLayer.setVisible(true)
+      basemapStatus.value = 'map.basemapLoadError'
+    }
+    return
+  }
+  if (version !== worldVersions[kind] || !basemapRef.value) {
+    loaded.group.dispose()
+    return
+  }
+  const basemapMap = basemapRef.value
+  const layers = basemapMap.getLayers()
+  const previous = worldLayers[kind]
+  if (previous) {
+    const index = layers.getArray().indexOf(previous)
+    if (index >= 0) layers.setAt(index, loaded.group)
+    previous.dispose()
+  } else {
+    // Sit on top of the offline land fallback, below the graticule.
+    layers.insertAt(1, loaded.group)
+  }
+  worldLayers[kind] = loaded.group
+  const active = basemap.value === kind
+  loaded.group.setVisible(active)
+  if (active) {
+    basemapStatus.value = ''
+    landLayer.setVisible(false)
+    if (loaded.background && basemapEl.value) basemapEl.value.style.backgroundColor = loaded.background
+  }
+}
+
 async function selectBasemap(event: Event) {
   const select = event.target as HTMLSelectElement
   const next = select.value as Basemap
   const version = ++selectionVersion
   cancelAmapLoad?.()
   basemapStatus.value = ''
-  if (next === basemap.value) return
+  // Re-selecting the current entry is a no-op, except on first mount: the ref
+  // already starts as 'osm' while the vector style behind it has not loaded
+  // yet, and an early return would leave only the offline land fallback on
+  // screen (no place names) until the user switched away and back.
+  const worldPending = next === 'osm' && !worldLayers.osm
+  if (next === basemap.value && !worldPending) return
 
   if ((next === 'amap' && !amapConfigured) || (next === 'tianditu' && !tiandituKey)) {
     select.value = basemap.value
@@ -936,13 +1013,20 @@ async function selectBasemap(event: Event) {
     amap = undefined
   }
 
+  const isWorld = next === 'osm'
   basemapStatus.value = ''
   basemap.value = next
   rememberBasemap(next)
-  osmLayer.setVisible(next === 'osm')
+  for (const [kind, layer] of Object.entries(worldLayers) as [WorldStyleKey, LayerGroup][]) {
+    layer.setVisible(kind === next)
+  }
   tiandituLayers.forEach((layer) => layer.setVisible(next === 'tianditu'))
+  if (isWorld && !worldLayers.osm) void loadWorldLayer('osm')
   gridLayer.setVisible(next !== 'amap')
-  landLayer.setVisible(next !== 'amap')
+  // The vector basemap paints its own land and coastlines; the offline land
+  // polygons stay hidden unless the style fails to load.
+  landLayer.setVisible(false)
+  if (!isWorld && basemapEl.value) basemapEl.value.style.backgroundColor = ''
   const source = vectorRef.value?.getSource()
   source?.clear()
   source?.addFeatures(buildCloud())
@@ -952,9 +1036,9 @@ async function selectBasemap(event: Event) {
   const view = mapRef.value?.getView()
   view?.cancelAnimations()
   view?.setMinZoom(next === 'amap' ? 2 : next === 'tianditu' ? 1 : -2)
-  view?.setCenter(next === 'osm' ? fromLonLat(DEFAULT_CENTER) : mapCoordinate(CHINA_CENTER[0], CHINA_CENTER[1]))
-  view?.setZoom(next === 'osm' ? DEFAULT_ZOOM : CHINA_ZOOM)
-  if (next === 'osm') fitWorld()
+  view?.setCenter(isWorld ? fromLonLat(DEFAULT_CENTER) : mapCoordinate(CHINA_CENTER[0], CHINA_CENTER[1]))
+  view?.setZoom(isWorld ? DEFAULT_ZOOM : CHINA_ZOOM)
+  if (isWorld) fitWorld()
   syncAmap()
 }
 
@@ -1044,11 +1128,23 @@ function flyToFocusedStation() {
 }
 
 .identify-popup__title {
+  display: block;
   overflow-wrap: anywhere;
   padding: 6px 8px;
   border-bottom: 1px solid #d5e3ef;
   font-weight: 600;
   background: #fff;
+  color: #222;
+}
+
+.identify-popup__title-link {
+  color: #005288;
+  text-decoration: none;
+}
+
+.identify-popup__title-link:hover,
+.identify-popup__title-link:focus-visible {
+  text-decoration: underline;
 }
 
 .identify-popup__body {

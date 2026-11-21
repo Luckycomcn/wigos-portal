@@ -933,7 +933,7 @@
   },
   {
     "id": "GAWnonAffiliated",
-    "title": "Non-affiliated"
+    "title": "Non-affiliated (GAWnonAffiliated)"
   },
   {
     "id": "GAWPFR",
@@ -1713,7 +1713,7 @@
   },
   {
     "id": "nonAffiliated",
-    "title": "Non-affiliated"
+    "title": "Non-affiliated (nonAffiliated)"
   },
   {
     "id": "NorEMSOGlider",
@@ -1738,6 +1738,10 @@
   {
     "id": "NZTSU",
     "title": "NZ-TSU"
+  },
+  {
+    "id": "OceanSITES",
+    "title": "OceanSITES"
   },
   {
     "id": "ODYSSEAGlider",

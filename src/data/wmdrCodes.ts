@@ -75,8 +75,21 @@ export function wmoRegionTitle(id?: string | null): string {
   return wmoRegionIndex.get(id.toLowerCase()) ?? id
 }
 
-/** Complete WMO register snapshot; refresh with npm run refresh:program-affiliations. */
+/**
+ * All programme / network affiliations published by the WMDR code list at
+ * https://codes.wmo.int/wmdr/ProgramAffiliation. The bundled JSON is generated
+ * by `npm run refresh:wmdr-codes` so advanced-search options always cover every
+ * valid affiliation (including GCW CryoNet) without a runtime dependency on
+ * codes.wmo.int or browser CORS. `loadProgramAffiliations()` may refresh the
+ * list at runtime; this snapshot stays as the offline fallback.
+ *
+ * Titles are the plain register labels: the identifier is kept in `id` and is
+ * never prefixed onto the label, which is what users see in the filter.
+ */
 export const programAffiliations: WmdrCode[] = [...programAffiliationsRaw]
+
+/** Codes retained for catalogue records that still reference them. */
+const LEGACY_PROGRAMMES: WmdrCode[] = [{ id: 'OceanSITES', title: 'OceanSITES' }]
 
 const programIndex = new Map(programAffiliations.map((p) => [p.id.toLowerCase(), p.title]))
 
@@ -104,6 +117,8 @@ export function loadProgramAffiliations(): Promise<WmdrCode[]> {
       }
       // Reject error pages and truncated responses before replacing the fallback.
       if (codes.size < 100 || !codes.has('GCWCryoNet')) throw new Error('Incomplete WMO register')
+      // Keep legacy codes the current register no longer publishes.
+      for (const code of LEGACY_PROGRAMMES) if (!codes.has(code.id)) codes.set(code.id, { ...code })
       const updated = [...codes.values()].sort((a, b) => a.id.localeCompare(b.id))
       programAffiliations.splice(0, programAffiliations.length, ...updated)
       programIndex.clear()

@@ -20,7 +20,6 @@ export default {
   },
   "footer": {
     "disclaimer": "图片和目录记录的权利归各自提供方所有。本门户不代表 WMO，也不表示获得其认可。",
-    "version": "版本：{version}",
     "attribution": "独立演示门户"
   },
   "menu": {
@@ -303,7 +302,7 @@ export default {
     "zoomOut": "缩小",
     "resetView": "重置视图",
     "basemap": "底图",
-    "basemapOsm": "国外 · OpenStreetMap",
+    "basemapOsm": "国际 · OpenFreeMap",
     "basemapAmap": "国内 · 高德地图",
     "basemapTianditu": "国内 · 天地图",
     "basemapMissingKey": "此底图需要管理员配置服务密钥。",

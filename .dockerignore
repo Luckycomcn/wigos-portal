@@ -6,6 +6,7 @@ scripts
 .env
 .env.*
 !.env.example
+deploy.env
 dist
 dist.zip
 dist-ssr

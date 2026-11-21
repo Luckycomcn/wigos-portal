@@ -15,7 +15,7 @@ dist-ssr
 *.local
 *.tsbuildinfo
 
-# Editor directories and files
+# Editor directories and files (untrusted workspace settings are not committed)
 .vscode/
 .idea
 .DS_Store
@@ -29,6 +29,7 @@ dist-ssr
 .env
 .env.*
 !.env.example
+deploy.env
 tmp/
 *.pem
 *.key
