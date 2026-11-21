@@ -170,7 +170,9 @@ export default {
     "wigosStationIdentifier": "Identifiant de station WIGOS",
     "guideTitle": "Guide d’accès automatisé",
     "guideNote": "L’API est fournie par le catalogue via OGC API - Records ; le portail enregistre uniquement des pages et des fichiers d’exportation.",
-    "demoNote": "Connecté au catalogue en ligne. Les exportations récupèrent 250 enregistrements par page et peuvent être annulées. Le téléchargement utilise les mêmes données que l’aperçu."
+    "bulkLimitedNote": "L’exportation en masse couvre uniquement les résultats de recherche actuels, jusqu’à {limit} enregistrements. Le catalogue complet ({all} enregistrements) est trop volumineux pour un téléchargement via navigateur ; utilisez le point d’accès OGC API - Records ci-dessous pour les données complètes.",
+    "tooMany": "Cette recherche dépasse {limit} enregistrements. Affinez les filtres (par pays, type d’installation ou programme) pour rester sous la limite d’exportation.",
+    "demoNote": "Connecté au catalogue en ligne. Les exportations filtrées récupèrent 250 enregistrements par page, peuvent être annulées et utilisent les mêmes données que l’aperçu."
   },
   "map": {
     "clusterCount": "{count} stations",

@@ -550,6 +550,8 @@ export interface FacilitySearchParams {
   signal?: AbortSignal
   /** Load the full WMDR2 properties (needed for the results table); defaults to true. */
   full?: boolean
+  /** Override the request timeout for slow bulk operations (e.g. exports). */
+  timeoutMs?: number
 }
 
 export interface FacilitySearchResult {
@@ -663,7 +665,7 @@ export async function searchFacilities(params: FacilitySearchParams = {}): Promi
     properties: params.full === false ? ['title'] : undefined,
     filters,
     signal: params.signal,
-    timeoutMs: 40000,
+    timeoutMs: params.timeoutMs ?? 40000,
   })
 
   return {

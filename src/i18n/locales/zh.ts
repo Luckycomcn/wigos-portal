@@ -177,7 +177,9 @@ export default {
     "wigosStationIdentifier": "Wigos 台站标识符",
     "guideTitle": "机器对机器指南",
     "guideNote": "业务 API 由目录通过 OGC API - Records 提供；本门户仅保存页面和导出文件。",
-    "demoNote": "已连接真实目录。批量导出按每页 250 条获取，可随时取消。生成后下载与预览使用同一份数据。"
+    "bulkLimitedNote": "批量导出仅覆盖当前检索结果，最多 {limit} 条。全量目录（{all} 条）体积过大，无法通过浏览器下载；如需完整数据请使用下方 OGC API - Records 接口。",
+    "tooMany": "当前检索结果超过 {limit} 条。请缩小筛选范围（如按国家、台站类型或计划筛选），使结果在可导出上限内。",
+    "demoNote": "已连接真实目录。筛选结果按每页 250 条获取，可随时取消，下载与预览使用同一份数据。"
   },
   "wmdrLabels": {
   "role": {

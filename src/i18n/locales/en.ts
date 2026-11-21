@@ -177,7 +177,9 @@ export default {
     "wigosStationIdentifier": "Wigos station identifier",
     "guideTitle": "Machine-to-machine guide",
     "guideNote": "The business API is provided by the Catalogue through OGC API - Records; the portal only saves pages and export files.",
-    "demoNote": "Connected to the live catalogue. Bulk exports fetch 250 records per page and can be cancelled. Downloads use the same generated data as the preview."
+    "bulkLimitedNote": "Bulk export covers the current search results only, up to {limit} records. The full catalogue ({all} records) is too large for a browser download; use the OGC API - Records endpoint below for complete data.",
+    "tooMany": "This search matches more than {limit} records. Narrow the filters (for example by country, facility type or programme) so the result is within the export limit.",
+    "demoNote": "Connected to the live catalogue. Filtered exports fetch 250 records per page, can be cancelled, and use the same generated data as the preview."
   },
   "wmdrLabels": {
   "role": {
