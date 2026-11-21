@@ -314,5 +314,34 @@ export default {
       "subsurface": "地下",
       "lake": "湖泊或河流"
     }
+  },
+  "about": {
+    "title": "API 与工具",
+    "gofcTitle": "全球观测设施目录（GOFC）",
+    "intro": "WIGOS 元数据还可通过遵循国际标准的地理空间 Web 应用程序编程接口（API）获取。这些接口专为机器对机器交互设计，可用于 Web、移动端或桌面应用与工具。",
+    "standardsBefore": "WIGOS 全球观测设施目录（GOFC）支持",
+    "ogcRecords": "OGC API - Records",
+    "standardsAfter": "标准，便于以互操作方式发现观测设施元数据。作为世界气象组织信息系统的一部分，OGC 标准在降低天气、气候和水数据交换门槛方面发挥着重要作用，并得到大量现成开源和商业工具的支持。",
+    "apiBefore": "WIGOS GOFC API 的访问地址为",
+    "apiAfter": "。该 API 为所有 WIGOS 元数据提供发现、访问、可视化和处理功能，并提供用于元数据校验、报告生成和质量评估的在线服务流程。",
+    "examplesTitle": "API 链接示例",
+    "examplesIntro": "以下链接和示例概述了 API 的功能：",
+    "example1": "查看 WIGOS 元数据集合",
+    "example2": "查看全部 WIGOS 观测设施元数据",
+    "example3": "按边界几何（bbox）查询所有观测设施",
+    "example4": "查询所有固定陆地观测设施",
+    "example5": "查询 WMO 第 III 区（南美洲）的所有观测设施",
+    "example6": "查询挪威的所有观测设施",
+    "example7": "查询所有加入 GBON 的观测设施",
+    "example8": "查询所有测量总柱臭氧的观测设施",
+    "jsonBefore": "请注意，WIGOS GOFC 以 HTML 或 JSON 格式提供搜索结果。在查询中添加",
+    "jsonAfter": "即可获取 JSON 格式的结果。",
+    "swaggerBefore": "开发者可访问以下 Swagger 接口：",
+    "poweredBefore": "WIGOS GOFC 由",
+    "poweredMid": "驱动，它是",
+    "poweredAfter": "标准的参考实现。",
+    "toolsTitle": "工具",
+    "toolsIntro": "以下 GitHub 示例提供了集成 WIGOS Web 服务的高级访问方式和流程示例：",
+    "pywmdrDesc": "pywmdr 为世界气象组织 WIGOS 元数据表示（WMDR2）提供校验和质量评估功能。"
   }
 }

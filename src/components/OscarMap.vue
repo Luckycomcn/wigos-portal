@@ -338,7 +338,10 @@ function landFeatures(): Feature<Geometry>[] {
   return feats
 }
 
-const landSource = new VectorSource({ wrapX: false })
+// Seed with the bundled coarse outlines so the world silhouette is painted on
+// the very first frame. The detailed GeoJSON replaces these once fetched; if
+// that request fails the coarse outlines simply stay in place.
+const landSource = new VectorSource({ features: landFeatures(), wrapX: false })
 const gridLayer = new VectorLayer({
   source: new VectorSource({ features: graticuleLines(), wrapX: false }),
   style: new Style({ stroke: new Stroke({ color: GRID_STROKE, width: 1 }) }),

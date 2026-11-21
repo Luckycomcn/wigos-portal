@@ -314,5 +314,34 @@ export default {
       "subsurface": "sub-surface",
       "lake": "lake or river"
     }
+  },
+  "about": {
+    "title": "APIs and tools",
+    "gofcTitle": "Global Observing Facility Catalogue (GOFC)",
+    "intro": "WIGOS metadata is also available using geospatial Web Application Programming Interfaces (APIs) adhering to international standards. They are designed to support machine to machine interaction, and can be used in Web, mobile or desktop applications and tools.",
+    "standardsBefore": "The WIGOS Global Observing Facility Catalogue (GOFC) supports the",
+    "ogcRecords": "OGC API - Records",
+    "standardsAfter": "standard which facilitates interoperable discovery of observing facility metadata. OGC standards play an important role in lowering the barrier to weather/climate/water data exchange as part of the WMO Information System and are supported by numerous off the shelf open source and commercial tools.",
+    "apiBefore": "The WIGOS GOFC API is available at",
+    "apiAfter": ". The API provides discovery, access, visualization and processing functionality to all WIGOS metadata, as well as online services processes for metadata validation, reporting and quality assessment.",
+    "examplesTitle": "Example API links",
+    "examplesIntro": "The below links and examples provide an overview of API functionality:",
+    "example1": "View WIGOS metadata collection",
+    "example2": "View all WIGOS observing facility metadata",
+    "example3": "Query for all observing facilities using a bounding geometry (bbox)",
+    "example4": "Query for all fixed land observing facilities",
+    "example5": "Query for all observing facilities in WMO Region III (South America)",
+    "example6": "Query for all observing facilities in Norway",
+    "example7": "Query for all observing facilities affiliated with GBON",
+    "example8": "Query for all observing facilities measuring total column ozone",
+    "jsonBefore": "Note that the WIGOS GOFC provides search results in HTML or JSON. JSON results are made available by adding",
+    "jsonAfter": "to search queries.",
+    "swaggerBefore": "For developers, a Swagger interface is available at",
+    "poweredBefore": "The WIGOS GOFC is powered by",
+    "poweredMid": ", a Reference Implementation of the",
+    "poweredAfter": "standards.",
+    "toolsTitle": "Tools",
+    "toolsIntro": "The following GitHub examples provide high level access and workflow examples of integrating WIGOS Web services:",
+    "pywmdrDesc": "pywmdr provides validation and quality assessment capabilities for the WMO WIGOS Metadata Representation (WMDR2)"
   }
 }
