@@ -31,12 +31,32 @@ export function localizeTextField(field: Expression, locale: Locale): Expression
 interface StyleLayer {
   id?: string
   layout?: Record<string, unknown>
+  paint?: Record<string, unknown>
 }
 
 export type LocalizedStyle = {
   layers?: StyleLayer[]
   sources?: Record<string, { attribution?: string; [key: string]: unknown }>
   [key: string]: unknown
+}
+
+/** Soft blue for the positron water layers (otherwise a flat grey). */
+export const WATER_FILL_COLOR = 'rgb(160, 205, 230)'
+export const WATERWAY_LINE_COLOR = 'hsl(200, 55%, 72%)'
+
+/**
+ * Tint the grey water layers blue so oceans read as water at a glance.
+ * Only the `water` fill and `waterway` line are touched; all other layers
+ * (and their labels) are returned unchanged.
+ */
+export function tintWater(layer: StyleLayer): StyleLayer {
+  if (layer.id === 'water') {
+    return { ...layer, paint: { ...layer.paint, 'fill-color': WATER_FILL_COLOR } }
+  }
+  if (layer.id === 'waterway') {
+    return { ...layer, paint: { ...layer.paint, 'line-color': WATERWAY_LINE_COLOR } }
+  }
+  return layer
 }
 
 const OPENFREEMAP_ATTRIBUTION =
@@ -47,11 +67,12 @@ const OPENFREEMAP_ATTRIBUTION =
 /** Return a shallow copy of the style with localized labels and required attribution. */
 export function localizeStyle(style: LocalizedStyle, locale: Locale): LocalizedStyle {
   const layers = (style.layers ?? []).map((layer) => {
-    const field = layer.layout?.['text-field']
-    if (field === undefined) return layer
+    const tinted = tintWater(layer)
+    const field = tinted.layout?.['text-field']
+    if (field === undefined) return tinted
     return {
-      ...layer,
-      layout: { ...layer.layout, 'text-field': localizeTextField(field, locale) },
+      ...tinted,
+      layout: { ...tinted.layout, 'text-field': localizeTextField(field, locale) },
     }
   })
   const sources = Object.fromEntries(
