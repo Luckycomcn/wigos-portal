@@ -67,6 +67,7 @@
 
       <div class="oscar-map-layers">
         <select :value="basemap" :aria-label="$t('map.basemap')" @change="selectBasemap">
+          <option value="localized">{{ $t('map.basemapLocalized') }}</option>
           <option value="osm">{{ $t('map.basemapOsm') }}</option>
           <option value="amap">{{ $t('map.basemapAmap') }}</option>
           <option value="tianditu">{{ $t('map.basemapTianditu') }}</option>
@@ -97,9 +98,11 @@ import { filterCountry, filterType, filterPrograms, filterStatuses, focusedStati
 import Map from 'ol/Map'
 import View from 'ol/View'
 import TileLayer from 'ol/layer/Tile'
+import type LayerGroup from 'ol/layer/Group'
 import OSM from 'ol/source/OSM'
 import { amapConfigured, loadAmap, toGcj02 } from '../utils/amap'
 import { tiandituKey, tiandituSource } from '../utils/tianditu'
+import { createLocalizedLayer } from '../utils/localizedBasemap'
 import VectorLayer from 'ol/layer/Vector'
 import VectorSource from 'ol/source/Vector'
 import VectorTileLayer from 'ol/layer/VectorTile'
@@ -189,9 +192,12 @@ const WORLD_EXTENT = transformExtent([-180, -85, 180, 85], 'EPSG:4326', 'EPSG:38
 const DEFAULT_ZOOM = 2.2
 const CHINA_CENTER: [number, number] = [104, 35]
 const CHINA_ZOOM = 4
+// Start from 'osm' as the applied baseline; onMounted applies selectedBasemap
+// (default 'localized') through selectBasemap so the localized layer is loaded.
 const basemap = ref<Basemap>('osm')
 const basemapStatus = ref('')
 const amapEl = ref<HTMLDivElement | null>(null)
+let localizedLayer: LayerGroup | null = null
 const osmLayer = new TileLayer({ source: new OSM({ wrapX: false }) })
 const tiandituLayers = (['vec', 'cva'] as const).map((layer) => new TileLayer({
   source: tiandituSource(layer), visible: false,
@@ -803,7 +809,7 @@ onMounted(() => {
     const view = map.getView()
     const previousSize = map.getSize()
     const previousWorldZoom = previousSize ? view.getZoomForResolution((WORLD_EXTENT[2]! - WORLD_EXTENT[0]!) / previousSize[0]!) : undefined
-    const showingWorld = basemap.value === 'osm' && previousWorldZoom != null && Math.abs((view.getZoom() ?? 0) - previousWorldZoom) < 0.05
+    const showingWorld = (basemap.value === 'osm' || basemap.value === 'localized') && previousWorldZoom != null && Math.abs((view.getZoom() ?? 0) - previousWorldZoom) < 0.05
     map.updateSize()
     basemapRef.value?.updateSize()
     if (showingWorld) fitWorld()
@@ -825,6 +831,10 @@ watch(() => props.visibleStations, () => {
   popupPinned.value = false
   isOverPopup.value = false
   dlOpen.value = false
+})
+
+watch(locale, () => {
+  if (basemap.value === 'localized' && localizedLayer) void applyLocalizedLayer()
 })
 
 watch(() => props.mapQuery, () => {
@@ -880,7 +890,7 @@ function fitWorld(duration = 0) {
 }
 
 function resetView() {
-  const world = basemap.value === 'osm'
+  const world = basemap.value === 'osm' || basemap.value === 'localized'
   if (world) {
     fitWorld(250)
     return
@@ -890,6 +900,26 @@ function resetView() {
     zoom: world ? DEFAULT_ZOOM : CHINA_ZOOM,
     duration: 250,
   })
+}
+
+let localizedVersion = 0
+
+/** Load (or reload on language change) the locale-aware vector basemap. */
+async function applyLocalizedLayer() {
+  const version = ++localizedVersion
+  const group = await createLocalizedLayer(locale.value as Parameters<typeof createLocalizedLayer>[0])
+  if (version !== localizedVersion || !basemapRef.value) return
+  const basemapMap = basemapRef.value
+  const layers = basemapMap.getLayers()
+  if (localizedLayer) {
+    const index = layers.getArray().indexOf(localizedLayer)
+    if (index >= 0) layers.setAt(index, group)
+    localizedLayer.dispose()
+  } else {
+    layers.push(group)
+  }
+  localizedLayer = group
+  group.setVisible(basemap.value === 'localized')
 }
 
 async function selectBasemap(event: Event) {
@@ -952,13 +982,18 @@ async function selectBasemap(event: Event) {
     amap = undefined
   }
 
+  const isWorld = next === 'osm' || next === 'localized'
   basemapStatus.value = ''
   basemap.value = next
   rememberBasemap(next)
   osmLayer.setVisible(next === 'osm')
   tiandituLayers.forEach((layer) => layer.setVisible(next === 'tianditu'))
+  localizedLayer?.setVisible(next === 'localized')
+  if (next === 'localized' && !localizedLayer) void applyLocalizedLayer()
   gridLayer.setVisible(next !== 'amap')
-  landLayer.setVisible(next !== 'amap')
+  // The localized vector basemap draws its own coastlines; the offline land
+  // fallback would draw on top of it with opaque polygons.
+  landLayer.setVisible(next === 'osm')
   const source = vectorRef.value?.getSource()
   source?.clear()
   source?.addFeatures(buildCloud())
@@ -968,9 +1003,9 @@ async function selectBasemap(event: Event) {
   const view = mapRef.value?.getView()
   view?.cancelAnimations()
   view?.setMinZoom(next === 'amap' ? 2 : next === 'tianditu' ? 1 : -2)
-  view?.setCenter(next === 'osm' ? fromLonLat(DEFAULT_CENTER) : mapCoordinate(CHINA_CENTER[0], CHINA_CENTER[1]))
-  view?.setZoom(next === 'osm' ? DEFAULT_ZOOM : CHINA_ZOOM)
-  if (next === 'osm') fitWorld()
+  view?.setCenter(isWorld ? fromLonLat(DEFAULT_CENTER) : mapCoordinate(CHINA_CENTER[0], CHINA_CENTER[1]))
+  view?.setZoom(isWorld ? DEFAULT_ZOOM : CHINA_ZOOM)
+  if (isWorld) fitWorld()
   syncAmap()
 }
 

@@ -302,6 +302,7 @@ export default {
     "zoomOut": "缩小",
     "resetView": "重置视图",
     "basemap": "底图",
+    "basemapLocalized": "按界面语言 · 全球",
     "basemapOsm": "国外 · OpenStreetMap",
     "basemapAmap": "国内 · 高德地图",
     "basemapTianditu": "国内 · 天地图",

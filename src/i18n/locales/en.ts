@@ -302,6 +302,7 @@ export default {
     "zoomOut": "Zoom out",
     "resetView": "Reset view",
     "basemap": "Basemap",
+    "basemapLocalized": "Follows UI language · Global",
     "basemapOsm": "International · OpenStreetMap",
     "basemapAmap": "China · AMap",
     "basemapTianditu": "China · Tianditu",

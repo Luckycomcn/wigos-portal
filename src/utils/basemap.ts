@@ -1,13 +1,13 @@
 import { ref } from 'vue'
 
-export type Basemap = 'osm' | 'amap' | 'tianditu'
+export type Basemap = 'localized' | 'osm' | 'amap' | 'tianditu'
 
 function initialBasemap(): Basemap {
   try {
     const saved = localStorage.getItem('oscar-basemap')
-    if (saved === 'amap' || saved === 'tianditu') return saved
+    if (saved === 'localized' || saved === 'osm' || saved === 'amap' || saved === 'tianditu') return saved
   } catch { /* Storage may be unavailable. Keep the in-memory preference. */ }
-  return 'osm'
+  return 'localized'
 }
 
 export const selectedBasemap = ref<Basemap>(initialBasemap())

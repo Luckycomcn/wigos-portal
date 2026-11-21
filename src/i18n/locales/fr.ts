@@ -191,6 +191,7 @@ export default {
     "zoomOut": "Zoom arrière",
     "resetView": "Réinitialiser la vue",
     "basemap": "Fond de carte",
+    "basemapLocalized": "Selon la langue de l’interface · Monde",
     "basemapOsm": "International · OpenStreetMap",
     "basemapAmap": "Chine · AMap",
     "basemapTianditu": "Chine · Tianditu",
