@@ -67,7 +67,6 @@
 
       <div class="oscar-map-layers">
         <select :value="basemap" :aria-label="$t('map.basemap')" @change="selectBasemap">
-          <option value="localized">{{ $t('map.basemapLocalized') }}</option>
           <option value="osm">{{ $t('map.basemapOsm') }}</option>
           <option value="amap">{{ $t('map.basemapAmap') }}</option>
           <option value="tianditu">{{ $t('map.basemapTianditu') }}</option>
@@ -99,10 +98,10 @@ import Map from 'ol/Map'
 import View from 'ol/View'
 import TileLayer from 'ol/layer/Tile'
 import type LayerGroup from 'ol/layer/Group'
-import OSM from 'ol/source/OSM'
+import type { Locale } from '../i18n'
 import { amapConfigured, loadAmap, toGcj02 } from '../utils/amap'
 import { tiandituKey, tiandituSource } from '../utils/tianditu'
-import { createLocalizedLayer } from '../utils/localizedBasemap'
+import { createLocalizedLayer, type WorldStyleKey } from '../utils/localizedBasemap'
 import VectorLayer from 'ol/layer/Vector'
 import VectorSource from 'ol/source/Vector'
 import VectorTileLayer from 'ol/layer/VectorTile'
@@ -193,12 +192,13 @@ const DEFAULT_ZOOM = 2.2
 const CHINA_CENTER: [number, number] = [104, 35]
 const CHINA_ZOOM = 4
 // Start from 'osm' as the applied baseline; onMounted applies selectedBasemap
-// (default 'localized') through selectBasemap so the localized layer is loaded.
+// (the OpenFreeMap world basemap) through selectBasemap so it is loaded.
 const basemap = ref<Basemap>('osm')
 const basemapStatus = ref('')
 const amapEl = ref<HTMLDivElement | null>(null)
-let localizedLayer: LayerGroup | null = null
-const osmLayer = new TileLayer({ source: new OSM({ wrapX: false }) })
+/** Locale-aware vector world basemaps, one per menu entry, created on demand. */
+const worldLayers: Partial<Record<WorldStyleKey, LayerGroup>> = {}
+const worldVersions: Partial<Record<WorldStyleKey, number>> = {}
 const tiandituLayers = (['vec', 'cva'] as const).map((layer) => new TileLayer({
   source: tiandituSource(layer), visible: false,
 }))
@@ -338,9 +338,7 @@ function landFeatures(): Feature<Geometry>[] {
   return feats
 }
 
-// Seed with the bundled coarse outlines so the world silhouette is painted on
-// the very first frame. The detailed GeoJSON replaces these once fetched; if
-// that request fails the coarse outlines simply stay in place.
+// Paint the bundled world outline while the remote basemap loads.
 const landSource = new VectorSource({ features: landFeatures(), wrapX: false })
 const gridLayer = new VectorLayer({
   source: new VectorSource({ features: graticuleLines(), wrapX: false }),
@@ -756,7 +754,7 @@ onMounted(() => {
     pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
     controls: [],
     interactions: [],
-    layers: [gridLayer, landLayer, osmLayer, ...tiandituLayers],
+    layers: [landLayer, gridLayer, ...tiandituLayers],
     view: map.getView(),
   })
   map.on('singleclick', async (evt) => {
@@ -812,7 +810,7 @@ onMounted(() => {
     const view = map.getView()
     const previousSize = map.getSize()
     const previousWorldZoom = previousSize ? view.getZoomForResolution((WORLD_EXTENT[2]! - WORLD_EXTENT[0]!) / previousSize[0]!) : undefined
-    const showingWorld = (basemap.value === 'osm' || basemap.value === 'localized') && previousWorldZoom != null && Math.abs((view.getZoom() ?? 0) - previousWorldZoom) < 0.05
+    const showingWorld = basemap.value === 'osm' && previousWorldZoom != null && Math.abs((view.getZoom() ?? 0) - previousWorldZoom) < 0.05
     map.updateSize()
     basemapRef.value?.updateSize()
     if (showingWorld) fitWorld()
@@ -837,7 +835,8 @@ watch(() => props.visibleStations, () => {
 })
 
 watch(locale, () => {
-  if (basemap.value === 'localized' && localizedLayer) void applyLocalizedLayer()
+  // Every world basemap that has been created so far must follow the UI language.
+  for (const kind of Object.keys(worldLayers) as WorldStyleKey[]) void loadWorldLayer(kind)
 })
 
 watch(() => props.mapQuery, () => {
@@ -893,7 +892,7 @@ function fitWorld(duration = 0) {
 }
 
 function resetView() {
-  const world = basemap.value === 'osm' || basemap.value === 'localized'
+  const world = basemap.value === 'osm'
   if (world) {
     fitWorld(250)
     return
@@ -905,24 +904,49 @@ function resetView() {
   })
 }
 
-let localizedVersion = 0
-
-/** Load (or reload on language change) the locale-aware vector basemap. */
-async function applyLocalizedLayer() {
-  const version = ++localizedVersion
-  const group = await createLocalizedLayer(locale.value as Parameters<typeof createLocalizedLayer>[0])
-  if (version !== localizedVersion || !basemapRef.value) return
+/**
+ * Load (or reload on language change) one of the locale-aware vector basemaps.
+ * The vector style replaces the old raster OpenStreetMap layer: raster tiles
+ * have the place names baked into the image, so they can never follow the UI
+ * language.
+ */
+async function loadWorldLayer(kind: WorldStyleKey) {
+  const version = (worldVersions[kind] ?? 0) + 1
+  worldVersions[kind] = version
+  let loaded: Awaited<ReturnType<typeof createLocalizedLayer>>
+  try {
+    loaded = await createLocalizedLayer(locale.value as Locale, kind)
+  } catch {
+    if (version === worldVersions[kind] && basemap.value === kind) {
+      // Offline land polygons are the only thing we can still show.
+      landLayer.setVisible(true)
+      basemapStatus.value = 'map.basemapLoadError'
+    }
+    return
+  }
+  if (version !== worldVersions[kind] || !basemapRef.value) {
+    loaded.group.dispose()
+    return
+  }
   const basemapMap = basemapRef.value
   const layers = basemapMap.getLayers()
-  if (localizedLayer) {
-    const index = layers.getArray().indexOf(localizedLayer)
-    if (index >= 0) layers.setAt(index, group)
-    localizedLayer.dispose()
+  const previous = worldLayers[kind]
+  if (previous) {
+    const index = layers.getArray().indexOf(previous)
+    if (index >= 0) layers.setAt(index, loaded.group)
+    previous.dispose()
   } else {
-    layers.push(group)
+    // Sit on top of the offline land fallback, below the graticule.
+    layers.insertAt(1, loaded.group)
   }
-  localizedLayer = group
-  group.setVisible(basemap.value === 'localized')
+  worldLayers[kind] = loaded.group
+  const active = basemap.value === kind
+  loaded.group.setVisible(active)
+  if (active) {
+    basemapStatus.value = ''
+    landLayer.setVisible(false)
+    if (loaded.background && basemapEl.value) basemapEl.value.style.backgroundColor = loaded.background
+  }
 }
 
 async function selectBasemap(event: Event) {
@@ -931,7 +955,12 @@ async function selectBasemap(event: Event) {
   const version = ++selectionVersion
   cancelAmapLoad?.()
   basemapStatus.value = ''
-  if (next === basemap.value) return
+  // Re-selecting the current entry is a no-op, except on first mount: the ref
+  // already starts as 'osm' while the vector style behind it has not loaded
+  // yet, and an early return would leave only the offline land fallback on
+  // screen (no place names) until the user switched away and back.
+  const worldPending = next === 'osm' && !worldLayers.osm
+  if (next === basemap.value && !worldPending) return
 
   if ((next === 'amap' && !amapConfigured) || (next === 'tianditu' && !tiandituKey)) {
     select.value = basemap.value
@@ -985,18 +1014,20 @@ async function selectBasemap(event: Event) {
     amap = undefined
   }
 
-  const isWorld = next === 'osm' || next === 'localized'
+  const isWorld = next === 'osm'
   basemapStatus.value = ''
   basemap.value = next
   rememberBasemap(next)
-  osmLayer.setVisible(next === 'osm')
+  for (const [kind, layer] of Object.entries(worldLayers) as [WorldStyleKey, LayerGroup][]) {
+    layer.setVisible(kind === next)
+  }
   tiandituLayers.forEach((layer) => layer.setVisible(next === 'tianditu'))
-  localizedLayer?.setVisible(next === 'localized')
-  if (next === 'localized' && !localizedLayer) void applyLocalizedLayer()
+  if (isWorld && !worldLayers.osm) void loadWorldLayer('osm')
   gridLayer.setVisible(next !== 'amap')
-  // The localized vector basemap draws its own coastlines; the offline land
-  // fallback would draw on top of it with opaque polygons.
-  landLayer.setVisible(next === 'osm')
+  // The vector basemap paints its own land and coastlines; the offline land
+  // polygons remain visible while the world style loads or if loading fails.
+  landLayer.setVisible(isWorld && !worldLayers.osm)
+  if (!isWorld && basemapEl.value) basemapEl.value.style.backgroundColor = ''
   const source = vectorRef.value?.getSource()
   source?.clear()
   source?.addFeatures(buildCloud())

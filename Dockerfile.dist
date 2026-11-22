@@ -1,0 +1,20 @@
+# Prebuilt-bundle image (no Node build on the server).
+# Use when `docker compose up -d --build` is too slow or the box cannot reach npm.
+#
+#   docker build -f Dockerfile.dist -t wigos-portal:latest .
+#
+# Map keys still come from the environment at container start.
+
+FROM nginx:1.27-alpine
+
+RUN rm -rf /usr/share/nginx/html/*
+ENV NGINX_ENVSUBST_FILTER=AMAP_SECURITY_JS_CODE
+COPY nginx.conf /etc/nginx/templates/default.conf.template
+COPY deploy/40-wigos-config.sh /docker-entrypoint.d/40-wigos-config.sh
+RUN chmod +x /docker-entrypoint.d/40-wigos-config.sh
+COPY dist/ /usr/share/nginx/html/
+
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget -q --spider http://127.0.0.1:8080/ || exit 1
+CMD ["nginx", "-g", "daemon off;"]

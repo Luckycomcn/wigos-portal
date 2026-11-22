@@ -1,0 +1,28 @@
+# Same service, built from the prebuilt bundle (no Node/npm on the server).
+#   docker compose -f docker-compose.dist.yml up -d --build
+#
+# Keys are already baked into dist/ (compiled into the JS bundle), so the
+# container needs no configuration. Set TIANDITU_KEY / AMAP_KEY / ... in the
+# environment only if you want to override them at start-up.
+
+services:
+  wigos-portal:
+    image: wigos-portal:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.dist
+    environment:
+      TIANDITU_KEY: ${TIANDITU_KEY:-}
+      AMAP_KEY: ${AMAP_KEY:-}
+      AMAP_SECURITY_JS_CODE: ${AMAP_SECURITY_JS_CODE:-}
+      AMAP_SERVICE_HOST: ${AMAP_SERVICE_HOST:-}
+      WIGOS_GOFC_URL: ${WIGOS_GOFC_URL:-}
+    ports:
+      - "80:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s

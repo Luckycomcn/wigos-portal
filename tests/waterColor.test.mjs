@@ -38,12 +38,12 @@ const style = {
   ],
   sources: { openmaptiles: { type: 'vector' }, other: { type: 'raster' } },
 }
-const out = localizeStyle(style, 'zh-CN')
+const out = localizeStyle(style, 'zh')
 assert.equal(out.layers[0].paint['fill-color'], WATER_FILL_COLOR, 'water tinted in full style')
 assert.equal(out.layers[1].paint['line-color'], WATERWAY_LINE_COLOR, 'waterway tinted in full style')
 // JSON round-trip avoids cross-realm prototype mismatch from vm.runInNewContext.
 const json = (v) => JSON.parse(JSON.stringify(v))
-assert.deepEqual(json(out.layers[2].layout['text-field']), ['coalesce', ['get', 'name:zh-CN'], ['get', 'name:latin'], ['get', 'name:en'], ['get', 'name']], 'label still localized')
+assert.deepEqual(json(out.layers[2].layout['text-field']), ['coalesce', ['get', 'name:zh-Hans'], ['get', 'name:zh'], ['get', 'name'], ['get', 'name:en']], 'label still localized')
 assert.deepEqual(json(out.layers[3].layout['text-field']), ['to-string', ['get', 'ref']], 'non-name field untouched')
 assert.match(out.sources.openmaptiles.attribution, /OpenFreeMap/, 'attribution preserved')
 assert.equal(out.sources.other.attribution, undefined, 'other source untouched')

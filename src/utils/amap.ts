@@ -1,3 +1,5 @@
+import { runtimeConfig } from './runtimeConfig'
+
 interface AmapInstance {
   setZoomAndCenter(zoom: number, center: number[], immediately: boolean): void
   on(event: 'complete', handler: () => void): void
@@ -26,9 +28,9 @@ const amapWindow = window as Window & {
   _AMapSecurityConfig?: { serviceHost?: string; securityJsCode?: string }
 }
 
-export const amapKey = import.meta.env.VITE_AMAP_KEY?.trim()
-const serviceHost = import.meta.env.VITE_AMAP_SERVICE_HOST?.trim()
-const securityJsCode = import.meta.env.VITE_AMAP_SECURITY_JS_CODE?.trim()
+export const amapKey = runtimeConfig.amapKey
+const serviceHost = runtimeConfig.amapServiceHost
+const securityJsCode = runtimeConfig.amapSecurityJsCode
 export const amapConfigured = Boolean(amapKey && (serviceHost || securityJsCode))
 
 let loading: Promise<AmapApi> | undefined
@@ -48,7 +50,7 @@ export function loadAmap(): Promise<AmapApi> {
       reject(new Error('AMap JS API failed to load'))
     }
     const timer = window.setTimeout(fail, 15000)
-    script.src = 'https://webapi.amap.com/maps?v=2.0&key=' + encodeURIComponent(amapKey)
+    script.src = 'https://webapi.amap.com/maps?v=2.0&key=' + encodeURIComponent(amapKey ?? '')
     script.onload = () => {
       if (!amapWindow.AMap) return fail()
       window.clearTimeout(timer)

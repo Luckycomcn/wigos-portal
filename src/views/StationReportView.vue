@@ -164,9 +164,11 @@ import { useRoute } from 'vue-router'
 import Map from 'ol/Map'
 import View from 'ol/View'
 import TileLayer from 'ol/layer/Tile'
+import type LayerGroup from 'ol/layer/Group'
 import VectorLayer from 'ol/layer/Vector'
-import XYZ from 'ol/source/XYZ'
 import VectorSource from 'ol/source/Vector'
+import { createLocalizedLayer, type WorldStyleKey } from '../utils/localizedBasemap'
+import type { Locale } from '../i18n'
 import Feature from 'ol/Feature'
 import Point from 'ol/geom/Point'
 import { fromLonLat } from 'ol/proj'
@@ -181,7 +183,7 @@ import { loadAmap, toGcj02 } from '../utils/amap'
 import { toLonLat } from 'ol/proj'
 import { useI18n } from 'vue-i18n'
 
-const { t, te } = useI18n()
+const { t, te, locale } = useI18n()
 
 function metadataLabel(group: 'role' | 'geometry' | 'method', code: string): string {
   const key = `wmdrLabels.${group}.${code}`
@@ -198,6 +200,37 @@ const dlOpen = ref(false)
 const miniEl = ref<HTMLDivElement | null>(null)
 const miniMap = shallowRef<Map | null>(null)
 const reportBasemap = selectedBasemap.value
+/** Vector world basemap of the locator map; its labels follow the UI language. */
+const miniWorldKind: WorldStyleKey | null = reportBasemap === 'osm' ? 'osm' : null
+let miniWorldLayer: LayerGroup | null = null
+let miniWorldVersion = 0
+
+/** Rebuild the locator basemap after a language switch. */
+async function refreshMiniWorldLayer() {
+  const map = miniMap.value
+  const previous = miniWorldLayer
+  if (!map || !previous || !miniWorldKind) return
+  const version = ++miniWorldVersion
+  let loaded: Awaited<ReturnType<typeof createLocalizedLayer>>
+  try {
+    loaded = await createLocalizedLayer(locale.value as Locale, miniWorldKind)
+  } catch {
+    if (!disposed && version === miniWorldVersion) miniMapError.value = true
+    return
+  }
+  const { group } = loaded
+  if (version !== miniWorldVersion || disposed || !miniMap.value) {
+    group.dispose()
+    return
+  }
+  const layers = miniMap.value.getLayers()
+  const current = miniWorldLayer
+  const index = layers.getArray().indexOf(current!)
+  if (index >= 0) layers.setAt(index, group)
+  current?.dispose()
+  miniWorldLayer = group
+  miniMapError.value = false
+}
 const miniAmapEl = ref<HTMLDivElement | null>(null)
 const miniMapError = ref(false)
 let disposed = false
@@ -297,15 +330,31 @@ onMounted(async () => {
   const center = report.value?.lon != null && report.value?.lat != null
     ? reportCoordinate(report.value.lon, report.value.lat)
     : fromLonLat([0, 0])
+  const basemapLayers: (TileLayer | LayerGroup)[] = []
+  if (reportBasemap === 'tianditu') {
+    basemapLayers.push(...(['vec', 'cva'] as const).map((layer) => new TileLayer({ source: tiandituSource(layer) })))
+  } else if (miniWorldKind) {
+    // Vector tiles instead of raster OSM: only vector labels can follow the language.
+    try {
+      const { group, background } = await createLocalizedLayer(locale.value as Locale, miniWorldKind)
+      if (disposed || !miniEl.value) {
+        group.dispose()
+        return
+      }
+      miniWorldLayer = group
+      basemapLayers.push(group)
+      if (background) miniEl.value.style.backgroundColor = background
+    } catch {
+      if (!disposed) miniMapError.value = true
+    }
+  }
   miniMap.value = new Map({
     target: miniEl.value,
     controls: defaultControls({ attribution: false, zoom: false, rotate: false }).extend([
       new ScaleLine({ units: 'metric', minWidth: 80 }),
     ]),
     layers: [
-      ...(reportBasemap === 'tianditu'
-        ? (['vec', 'cva'] as const).map((layer) => new TileLayer({ source: tiandituSource(layer) }))
-        : reportBasemap === 'amap' ? [] : [new TileLayer({ source: new XYZ({ url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', crossOrigin: 'anonymous' }) })]),
+      ...basemapLayers,
       new VectorLayer({ source: new VectorSource() }),
     ],
     view: new View({ center, zoom: 8, minZoom: 2, maxZoom: 18 }),
@@ -332,6 +381,10 @@ onBeforeUnmount(() => {
   disposed = true
   miniAmap?.destroy()
   miniMap.value?.setTarget(undefined)
+})
+
+watch(locale, () => {
+  void refreshMiniWorldLayer()
 })
 
 watch(wid, async () => {
