@@ -1,0 +1,26 @@
+# 保留宿主机已有 nginx/站点，用反向代理把 80 端口转到容器。
+# 放到 /etc/nginx/conf.d/wigos-portal.conf（示例域名用 IP，按需改）。
+# 前提：容器端口映射改成 127.0.0.1:8081:8080（见 README）。
+
+server {
+    listen 80;
+    server_name 39.106.157.56;
+
+    # 上传体积较大的响应（瓦片/数据）不要压到默认上限
+    client_max_body_size 20m;
+
+    location / {
+        proxy_pass http://127.0.0.1:8081;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # /config.js 不要缓存，容器重启后 key 可能变化
+    location = /config.js {
+        proxy_pass http://127.0.0.1:8081;
+        add_header Cache-Control "no-store";
+    }
+}

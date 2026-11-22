@@ -1,13 +1,16 @@
 import { ref } from 'vue'
 
-export type Basemap = 'localized' | 'osm' | 'amap' | 'tianditu'
+export type Basemap = 'osm' | 'amap' | 'tianditu'
 
 function initialBasemap(): Basemap {
   try {
     const saved = localStorage.getItem('oscar-basemap')
-    if (saved === 'localized' || saved === 'osm' || saved === 'amap' || saved === 'tianditu') return saved
+    // `localized` was the old "follows UI language · Global" entry; it was
+    // merged into the single OpenFreeMap basemap, so migrate the stored value.
+    if (saved === 'localized') return 'osm'
+    if (saved === 'osm' || saved === 'amap' || saved === 'tianditu') return saved
   } catch { /* Storage may be unavailable. Keep the in-memory preference. */ }
-  return 'localized'
+  return 'osm'
 }
 
 export const selectedBasemap = ref<Basemap>(initialBasemap())

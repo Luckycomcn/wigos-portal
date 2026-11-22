@@ -2,34 +2,57 @@ import type { Locale } from '../i18n'
 
 type Expression = unknown
 
-function isNamePicker(node: unknown): boolean {
-  return (
-    Array.isArray(node) &&
-    node[0] === 'coalesce' &&
-    Array.isArray(node[1]) && node[1][1] === 'name_en'
-  )
+/**
+ * OpenMapTiles keeps every translation in its own attribute: `name` is the
+ * local spelling, `name:en` / `name:zh` / `name:fr` the translated ones and
+ * `name:latin` the Romanised form. Any expression that reads one of those
+ * attributes is a place-name label and has to follow the UI language.
+ */
+function readsNameField(node: unknown): boolean {
+  if (!Array.isArray(node)) return false
+  const operator = node[0]
+  if ((operator === 'get' || operator === 'has') && typeof node[1] === 'string') {
+    return /^name(:[A-Za-z-]+|_[a-z]{2,3})?$/.test(node[1])
+  }
+  return node.some(readsNameField)
 }
 
 /**
- * Localize a MapLibre `text-field` expression so the place name follows the
- * UI language. OpenMapTiles stores translations as `name:<locale>`; we prefer
- * that field, then fall back through the Latin/international/local names.
- * Non-name fields (e.g. road `ref` via `to-string`) are returned untouched.
+ * Preferred to least preferred name attribute per UI language.
+ *
+ * English has to stay Latin-script, so it falls back to the Romanised name
+ * rather than to the local spelling. Chinese prefers `name:zh`, then the local
+ * spelling (inside China that *is* the Chinese name, so towns without an
+ * explicit `name:zh` tag never degrade to pinyin).
  */
-export function localizeTextField(field: Expression, locale: Locale): Expression {
-  if (!Array.isArray(field) || field[0] !== 'case') return field
-  if (!field.some(isNamePicker)) return field
-  return [
-    'coalesce',
-    ['get', `name:${locale}`],
-    ['get', 'name:latin'],
-    ['get', 'name:en'],
-    ['get', 'name'],
-  ]
+export const LABEL_FIELDS: Record<Locale, readonly string[]> = {
+  en: ['name:en', 'name_en', 'name:latin', 'name'],
+  // `name:zh` in the tiles often holds "简体;繁體" glued together, while
+  // `name:zh-Hans` is the clean simplified form — prefer it.
+  zh: ['name:zh-Hans', 'name:zh', 'name', 'name:en'],
+  fr: ['name:fr', 'name:latin', 'name', 'name:en'],
+  es: ['name:es', 'name:latin', 'name', 'name:en'],
 }
 
-interface StyleLayer {
+/** `coalesce` chain used as the label `text-field` for a UI language. */
+export function labelExpression(locale: Locale): Expression {
+  const fields = LABEL_FIELDS[locale] ?? ['name:latin', 'name']
+  return ['coalesce', ...fields.map((field) => ['get', field])]
+}
+
+/**
+ * Replace a style's own name picker (usually an English-first `case`/`coalesce`
+ * with a bilingual variant) by the chain for the UI language. Expressions that
+ * do not read a name attribute — road `ref` shields, housenumbers — are
+ * returned untouched.
+ */
+export function localizeTextField(field: Expression, locale: Locale): Expression {
+  return readsNameField(field) ? labelExpression(locale) : field
+}
+
+export interface StyleLayer {
   id?: string
+  type?: string
   layout?: Record<string, unknown>
   paint?: Record<string, unknown>
 }
@@ -38,6 +61,13 @@ export type LocalizedStyle = {
   layers?: StyleLayer[]
   sources?: Record<string, { attribution?: string; [key: string]: unknown }>
   [key: string]: unknown
+}
+
+/** Land/ocean base colour declared by the style's `background` layer. */
+export function backgroundColour(style: LocalizedStyle): string | undefined {
+  const background = (style.layers ?? []).find((layer) => layer.type === 'background')
+  const colour = background?.paint?.['background-color']
+  return typeof colour === 'string' ? colour : undefined
 }
 
 /** Soft blue for the positron water layers (otherwise a flat grey). */
@@ -64,15 +94,15 @@ const OPENFREEMAP_ATTRIBUTION =
   + '<a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> '
   + 'Data from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
 
-/** Return a shallow copy of the style with localized labels and required attribution. */
+/** Return a copy of the style with labels in `locale` and required attribution. */
 export function localizeStyle(style: LocalizedStyle, locale: Locale): LocalizedStyle {
-  const layers = (style.layers ?? []).map((layer) => {
-    const tinted = tintWater(layer)
-    const field = tinted.layout?.['text-field']
-    if (field === undefined) return tinted
+  const layers = (style.layers ?? []).map((original) => {
+    const layer = tintWater(original)
+    const field = layer.layout?.['text-field']
+    if (field === undefined) return layer
     return {
-      ...tinted,
-      layout: { ...tinted.layout, 'text-field': localizeTextField(field, locale) },
+      ...layer,
+      layout: { ...layer.layout, 'text-field': localizeTextField(field, locale) },
     }
   })
   const sources = Object.fromEntries(

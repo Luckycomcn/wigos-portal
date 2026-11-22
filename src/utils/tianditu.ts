@@ -1,6 +1,7 @@
 import XYZ from 'ol/source/XYZ'
+import { runtimeConfig } from './runtimeConfig'
 
-export const tiandituKey = import.meta.env.VITE_TIANDITU_KEY?.trim()
+export const tiandituKey = runtimeConfig.tiandituKey
 
 export function tiandituSource(layer: 'vec' | 'cva') {
   return new XYZ({

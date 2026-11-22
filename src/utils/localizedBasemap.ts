@@ -1,19 +1,43 @@
 import LayerGroup from 'ol/layer/Group'
 import { apply } from 'ol-mapbox-style'
 import type { Locale } from '../i18n'
-import { localizeStyle, type LocalizedStyle } from './localizeStyle'
+import { backgroundColour, localizeStyle, type LocalizedStyle } from './localizeStyle'
 
-/** Free, key-less vector basemap (OpenMapTiles schema) for the locale-aware layer. */
-export const LOCALIZED_STYLE_URL = 'https://tiles.openfreemap.org/styles/positron'
+export type WorldStyleKey = 'osm'
 
-let cachedStyle: LocalizedStyle | null = null
+/**
+ * Free, key-less vector style (OpenMapTiles schema, OpenStreetMap data).
+ *
+ * `bright` is the classic coloured cartography the portal asks for: beige land,
+ * green vegetation, blue water, orange trunk roads. The grey `positron` style
+ * is deliberately not used, and the two former world entries (bright + liberty)
+ * are collapsed into this single OpenFreeMap basemap.
+ */
+export const WORLD_STYLE_URLS: Record<WorldStyleKey, string> = {
+  osm: 'https://tiles.openfreemap.org/styles/bright',
+}
 
-async function fetchStyle(): Promise<LocalizedStyle> {
-  if (cachedStyle) return cachedStyle
-  const response = await fetch(LOCALIZED_STYLE_URL)
-  if (!response.ok) throw new Error(`Basemap style HTTP ${response.status}`)
-  cachedStyle = await response.json() as LocalizedStyle
-  return cachedStyle
+const styleCache = new Map<WorldStyleKey, Promise<LocalizedStyle>>()
+
+function loadStyle(key: WorldStyleKey): Promise<LocalizedStyle> {
+  let pending = styleCache.get(key)
+  if (!pending) {
+    pending = fetch(WORLD_STYLE_URLS[key]).then((response) => {
+      if (!response.ok) throw new Error(`Basemap style HTTP ${response.status}`)
+      return response.json() as Promise<LocalizedStyle>
+    }).catch((error) => {
+      styleCache.delete(key)
+      throw error
+    })
+    styleCache.set(key, pending)
+  }
+  return pending
+}
+
+export interface LocalizedBasemap {
+  group: LayerGroup
+  /** Base land colour declared by the style, used as the container backdrop. */
+  background?: string
 }
 
 /**
@@ -21,9 +45,17 @@ async function fetchStyle(): Promise<LocalizedStyle> {
  * A fresh group is returned on every call so switching language can replace
  * the old group atomically on the basemap.
  */
-export async function createLocalizedLayer(locale: Locale): Promise<LayerGroup> {
-  const style = await fetchStyle()
+export async function createLocalizedLayer(
+  locale: Locale,
+  key: WorldStyleKey = 'osm',
+): Promise<LocalizedBasemap> {
+  const style = await loadStyle(key)
   const group = new LayerGroup()
-  await apply(group, localizeStyle(style, locale))
-  return group
+  try {
+    await apply(group, localizeStyle(style, locale))
+  } catch (error) {
+    group.dispose()
+    throw error
+  }
+  return { group, background: backgroundColour(style) }
 }

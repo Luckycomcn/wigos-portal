@@ -270,7 +270,14 @@ assert.ok(codes.programAffiliations.some(code => code.id === 'GCWCryoNet'))
 // Original XML follows GOFC's source link without an XML proxy or CORS fetch.
 const original = 'https://oscar.wmo.int/oai/provider?verb=GetRecord&identifier=test'
 let opened
-globalThis.document = { createElement() { return { click() { opened = this } } } }
+let attached
+globalThis.document = {
+  body: { appendChild(anchor) { attached = anchor } },
+  createElement() { return {
+    click() { assert.equal(attached, this); opened = this },
+    remove() { assert.equal(attached, this); attached = undefined },
+  } },
+}
 calls = []
 globalThis.fetch = async url => {
   calls.push(String(url))
