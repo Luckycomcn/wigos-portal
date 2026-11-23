@@ -33,7 +33,7 @@ $header-sep: #a9bfd4;
   background: #fff url('../assets/header-grid.svg') no-repeat 48% center / 640px auto;
   min-height: 72px;
   box-sizing: border-box;
-  padding: 10px 24px;
+  padding: 20px 24px;
   border-bottom: 1px solid $header-border;
 
   &__left {

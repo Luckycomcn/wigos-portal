@@ -2,38 +2,41 @@
   <div class="station-browser">
     <aside class="criteria-card">
       <header><h2>{{ $t('search.criteria') }}</h2><el-button size="small" @click="reset">{{ $t('common.reset') }}</el-button></header>
-      <label class="criterion"><span>{{ $t('search.keyword') }}</span><el-input v-model="keyword" clearable @focus="keywordFocused = true" @blur="keywordFocused = false" :placeholder="$t('search.keywordPlaceholder')" :prefix-icon="Search" /></label>
+      <label class="criterion"><span>{{ $t('search.keyword') }}</span><el-input v-model="keyword" clearable @focus="keywordFocused = true" @blur="keywordFocused = false" @keyup.enter="submitKeyword" :placeholder="$t('search.keywordPlaceholder')" :prefix-icon="Search" /></label>
       <p v-if="keywordTooShort" role="status">{{ t('home.searchMinLength') }}</p>
       <label v-for="field in fields" :key="field.key" class="criterion">
         <span>{{ field.label }}</span>
-        <el-select v-model="filters[field.key]" filterable clearable :placeholder="$t('common.all')" :aria-label="$t('search.filterAria')">
-          <el-option v-for="option in field.options" :key="option" :label="field.key === 'program' ? programTitle(option) : option" :value="option" />
+        <el-select v-model="filters[field.key]" multiple collapse-tags collapse-tags-tooltip filterable clearable :placeholder="$t('common.all')" :aria-label="field.label">
+          <el-option v-for="option in field.options" :key="option.value" :label="option.label" :value="option.value" />
         </el-select>
       </label>
     </aside>
-    <section class="results-card" :aria-busy="loading">
+    <section class="results-card" :aria-busy="showMapCount ? mapCount === undefined && !mapCountFailed : loading">
       <header class="results-header">
-        <div><h2>{{ $t('search.results') }}</h2><span>{{ $t('search.remoteCount', { count: total.toLocaleString() }) }}</span></div>
+        <div>
+          <h2>{{ $t('search.results') }}</h2>
+          <span v-if="showMapCount && mapCount !== undefined">{{ $t('search.mapCount', { count: mapCount.toLocaleString() }) }}</span>
+          <span v-else-if="!showMapCount && !loading && !error">{{ $t('search.remoteCount', { count: total.toLocaleString() }) }}</span>
+        </div>
         <div class="mode-switch" :aria-label="$t('search.resultsDisplayMode')">
           <button :class="{ active: mode === 'list' }" @click="mode = 'list'"><el-icon><List /></el-icon> {{ $t('common.list') }}</button>
           <button :class="{ active: mode === 'map' }" @click="mode = 'map'"><el-icon><MapLocation /></el-icon> {{ $t('common.map') }}</button>
         </div>
       </header>
       <div class="active-criteria"><span>{{ $t('search.activeCriteria', { value: activeCriteria.length ? activeCriteria.join(' · ') : $t('search.none') }) }}</span></div>
+      <div v-if="mapOpened" v-show="mode === 'map'" class="map-wrap">
+        <OscarMap :map-query="displayedMapQuery" focus-exact-match @viewport-count="updateMapCount" />
+      </div>
       <p v-if="loading && mode === 'list'" class="state-message">{{ $t('search.loadingRemote') }}</p>
       <div v-else-if="error && mode === 'list'" class="state-message" role="alert">{{ error }} <el-button @click="loadPage">{{ $t('common.retry') }}</el-button></div>
-      <template v-else>
-        <div v-show="mode === 'map'" class="map-wrap">
-          <OscarMap v-if="mode === 'map'" :map-query="mapQuery" />
-        </div>
-        <template v-if="mode === 'list'">
+      <template v-else-if="mode === 'list'">
           <div class="table-wrap">
             <table>
               <thead><tr><th><button class="sort-button" @click="toggleSort">{{ $t('search.th.stationName') }} {{ ascending ? '↑' : '↓' }}</button></th><th>{{ $t('search.th.type') }}</th><th>{{ $t('search.th.territory') }}</th><th>{{ $t('search.th.position') }}</th><th>{{ $t('search.th.status') }}</th><th>{{ $t('search.th.program') }}</th></tr></thead>
               <tbody><tr v-for="station in paged" :key="station.id">
                 <td><router-link :to="{ name: 'stationReportDetails', params: { wigosId: station.wigos } }">{{ station.name }}</router-link><small>{{ station.wigos }}</small></td>
                 <td>{{ station.type }}</td><td>{{ station.terr }}</td>
-                <td class="position">{{ coordinate(station.lat, true) }}, {{ coordinate(station.lon, false) }}<small>{{ station.elev == null ? '—' : `${station.elev} m` }}</small></td>
+                <td class="position">{{ station.lat == null || station.lon == null ? '—' : `${coordinate(station.lat, true)}, ${coordinate(station.lon, false)}` }}<small>{{ station.elev == null ? '—' : `${station.elev} m` }}</small></td>
                 <td><span class="status" :class="{ operational: station.decl === 'Operational' }">{{ station.decl || $t('common.unknown') }}</span></td>
                 <td><span v-for="program in station.prog" :key="program" class="program">{{ program }}</span></td>
               </tr><tr v-if="!filtered.length"><td colspan="6" class="state-message">{{ $t('search.noMatching') }}</td></tr></tbody>
@@ -45,7 +48,6 @@
             <el-button size="small" :disabled="page >= pageCount || loading" :icon="ArrowRight" :aria-label="$t('common.nextPage')" @click="goPage(page + 1)" />
             <select v-model.number="pageSize" :aria-label="$t('common.recordsPerPage')"><option :value="25">25</option><option :value="50">50</option><option :value="100">100</option></select>
           </footer>
-        </template>
       </template>
       <footer v-if="fetchedAt && mode === 'list'" class="data-note">{{ $t('search.remoteNote', { count: filtered.length, total: total.toLocaleString(), date: fetchedAt.slice(0, 10) }) }}</footer>
     </section>
@@ -53,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ArrowLeft, ArrowRight, List, MapLocation, Search } from '@element-plus/icons-vue'
 import OscarMap from '../components/OscarMap.vue'
@@ -64,8 +66,10 @@ import 'element-plus/es/components/icon/style/css'
 import 'element-plus/es/components/input/style/css'
 import 'element-plus/es/components/select/style/css'
 import { useI18n } from 'vue-i18n'
-import { searchFacilities, featureToRow, type WigosFeature } from '../api/wigos'
-import { facilityTypes, programAffiliations, loadProgramAffiliations, programTitle, variableInfo, wmoRegions } from '../data/wmdrCodes'
+import { searchFacilities, featureToRow, useMapTiles, type FacilitySearchParams, type WigosFeature } from '../api/wigos'
+import { facilityTypes, programAffiliations, loadProgramAffiliations, variableInfo, wmoRegions, type WmdrCode } from '../data/wmdrCodes'
+import type { Locale } from '../i18n'
+import { searchOptionLabel } from '../i18n/searchOptions'
 import { territories } from '../data/wmdrTerritories'
 import variableTreeRaw from '../data/variableTree.json'
 
@@ -91,12 +95,13 @@ const programmeOptions = ref([...programAffiliations])
 onMounted(async () => { programmeOptions.value = await loadProgramAffiliations() })
 
 const route = useRoute()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const keyword = ref(String(route.query.q || ''))
 const keywordFocused = ref(false)
 const keywordTooShort = computed(() => keywordFocused.value && Array.from(keyword.value.trim()).length < 3)
 const mode = ref<'map' | 'list'>(route.query.mode === 'list' ? 'list' : 'map')
-const filters = reactive<Record<FilterKey, string>>({ type: '', program: '', variable: '', ra: '', terr: '' })
+const mapOpened = ref(mode.value === 'map')
+const filters = reactive<Record<FilterKey, string[]>>({ type: [], program: [], variable: [], ra: [], terr: [] })
 const rows = ref<Station[]>([])
 const total = ref(0)
 const fetchedAt = ref('')
@@ -120,23 +125,70 @@ function flattenVariables(nodes: VariableNode[]): { id: number; text: string }[]
 }
 
 const variableOptions = flattenVariables(variableTreeRaw as VariableNode[])
-const variableIdByName = new Map(variableOptions.map((item) => [item.text, item.id]))
+  .map(({ id, text }) => ({ id: String(id), title: text }))
 
-const fields = computed<{ key: FilterKey; label: string; options: string[] }[]>(() => [
-  { key: 'type', label: t('search.field.type'), options: facilityTypes.filter((type) => type.id !== 'unknown').map((type) => type.title) },
-  { key: 'program', label: t('search.field.program'), options: programmeOptions.value.map((program) => program.id) },
-  { key: 'variable', label: t('search.field.variable'), options: variableOptions.map((item) => item.text) },
-  { key: 'ra', label: t('search.field.region'), options: wmoRegions.map((region) => region.title) },
-  { key: 'terr', label: t('search.field.territory'), options: territories.map((territory) => territory.title) },
+const optionCollator = computed(() => new Intl.Collator(locale.value, { sensitivity: 'base' }))
+
+function sortedOptions(group: FilterKey, codes: WmdrCode[]) {
+  const language = locale.value as Locale
+  const collator = optionCollator.value
+  return codes.map(({ id, title }) => ({ value: id, label: searchOptionLabel(group, id, title, language) }))
+    .sort((left, right) => collator.compare(left.label, right.label))
+}
+
+const fields = computed<{ key: FilterKey; label: string; options: ReturnType<typeof sortedOptions> }[]>(() => [
+  { key: 'type', label: t('search.field.type'), options: sortedOptions('type', facilityTypes.filter((type) => type.id !== 'unknown')) },
+  { key: 'program', label: t('search.field.program'), options: sortedOptions('program', programmeOptions.value) },
+  { key: 'variable', label: t('search.field.variable'), options: sortedOptions('variable', variableOptions) },
+  { key: 'ra', label: t('search.field.region'), options: sortedOptions('ra', wmoRegions) },
+  { key: 'terr', label: t('search.field.territory'), options: sortedOptions('terr', territories) },
 ])
 
 const activeCriteria = computed(() =>
-  [keyword.value.trim(), ...Object.values(filters).filter(Boolean)].filter(Boolean),
+  [
+    keyword.value.trim(),
+    ...fields.value.flatMap(({ key, options }) =>
+      filters[key].map((value) => options.find((option) => option.value === value)?.label ?? value)),
+  ].filter(Boolean),
 )
 
-function toStation(feature: WigosFeature): Station | null {
-  const row = featureToRow(feature)
-  if (!row) return null
+const mapQuery = computed(() => ({
+  q: keyword.value.trim() || undefined,
+  types: [...filters.type],
+  programs: [...filters.program],
+  territories: [...filters.terr],
+  variables: filters.variable.map(Number),
+  regions: [...filters.ra],
+}))
+const showMapCount = computed(() => mode.value === 'map' && !useMapTiles(mapQuery.value))
+const uniqueKeywordMatch = shallowRef<{ query: FacilitySearchParams; id: string }>()
+const displayedMapQuery = computed(() => {
+  const match = uniqueKeywordMatch.value
+  return match?.query === mapQuery.value ? { ...match.query, q: match.id } : mapQuery.value
+})
+let mapSubmission: FacilitySearchParams | undefined
+const mapCount = ref<number>()
+const mapCountFailed = ref(false)
+
+function updateMapCount(query: FacilitySearchParams, count: number | undefined, failed: boolean) {
+  if (query !== displayedMapQuery.value) return
+  mapCount.value = count
+  mapCountFailed.value = failed
+}
+
+function submitKeyword() {
+  const query = mapQuery.value
+  if (query.q?.startsWith('0-')) {
+    mode.value = 'map'
+  } else if (query.q && mode.value === 'list') {
+    mapSubmission = query
+    window.clearTimeout(filterTimer)
+    goPage(1)
+  }
+}
+
+function toStation(feature: WigosFeature): Station {
+  const row = featureToRow(feature, true)
   const categories = [
     ...new Set(
       (feature.properties.observations ?? [])
@@ -167,29 +219,33 @@ async function loadPage() {
   pageController = controller
   const seq = ++requestSeq
   const mapOnly = mode.value === 'map'
+  const query = mapQuery.value
   loading.value = true
   error.value = ''
   try {
-    const variableId = filters.variable ? variableIdByName.get(filters.variable) : undefined
     const result = await searchFacilities({
-      q: keyword.value.trim() || undefined,
-      types: filters.type ? [filters.type] : [],
-      programs: filters.program ? [filters.program] : [],
-      territories: filters.terr ? [filters.terr] : [],
-      variables: variableId != null ? [variableId] : [],
-      regions: filters.ra ? [filters.ra] : [],
+      ...query,
       limit: mapOnly ? 1 : pageSize.value,
       offset: mapOnly ? 0 : (page.value - 1) * pageSize.value,
-      full: !mapOnly,
+      full: !mapOnly || Boolean(query.q && !query.q.startsWith('0-')),
       signal: controller.signal,
       sortby: ascending.value ? 'title' : '-title',
     })
-    if (seq !== requestSeq) return
-    rows.value = mapOnly ? [] : result.features.map(toStation).filter(Boolean) as Station[]
+    if (seq !== requestSeq || query !== mapQuery.value) return
+    const id = result.features[0]?.id
+    if (query.q && !query.q.startsWith('0-') && result.numberMatched === 1 && id) {
+      if (uniqueKeywordMatch.value?.query !== query || uniqueKeywordMatch.value.id !== id) {
+        uniqueKeywordMatch.value = { query, id }
+      }
+      if (mapSubmission === query) mode.value = 'map'
+    }
+    if (mapSubmission === query) mapSubmission = undefined
+    rows.value = mapOnly ? [] : result.features.map(toStation)
     total.value = result.numberMatched
     fetchedAt.value = result.timeStamp ?? new Date().toISOString()
   } catch (cause) {
-    if (seq !== requestSeq) return
+    if (seq !== requestSeq || query !== mapQuery.value) return
+    if (mapSubmission === query) mapSubmission = undefined
     rows.value = []
     total.value = 0
     error.value = t('search.remoteError', { message: cause instanceof Error ? cause.message : String(cause) })
@@ -201,15 +257,6 @@ async function loadPage() {
 const filtered = computed(() => rows.value)
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
 const paged = computed(() => filtered.value)
-const mapQuery = computed(() => ({
-  q: keyword.value.trim() || undefined,
-  types: filters.type ? [filters.type] : [],
-  programs: filters.program ? [filters.program] : [],
-  territories: filters.terr ? [filters.terr] : [],
-  variables: filters.variable && variableIdByName.has(filters.variable) ? [variableIdByName.get(filters.variable)!] : [],
-  regions: filters.ra ? [filters.ra] : [],
-}))
-
 function coordinate(value: number | null, latitude: boolean) {
   if (value == null || !Number.isFinite(value)) return '—'
   return `${Math.abs(value).toFixed(3)}°${latitude ? (value < 0 ? 'S' : 'N') : (value < 0 ? 'W' : 'E')}`
@@ -217,7 +264,7 @@ function coordinate(value: number | null, latitude: boolean) {
 
 function reset() {
   keyword.value = ''
-  for (const key of Object.keys(filters) as FilterKey[]) filters[key] = ''
+  for (const key of Object.keys(filters) as FilterKey[]) filters[key] = []
   page.value = 1
   void loadPage()
 }
@@ -252,8 +299,15 @@ onBeforeUnmount(() => {
   window.clearTimeout(filterTimer)
 })
 
-watch([keyword, () => ({ ...filters })], scheduleReload)
-watch(mode, () => { void loadPage() })
+watch(displayedMapQuery, () => {
+  mapCount.value = undefined
+  mapCountFailed.value = false
+})
+watch(mapQuery, scheduleReload)
+watch(mode, () => {
+  if (mode.value === 'map') mapOpened.value = true
+  void loadPage()
+})
 watch(pageSize, () => {
   page.value = 1
   void loadPage()
@@ -261,12 +315,7 @@ watch(pageSize, () => {
 watch([rows, total, activeCriteria], () => {
   saveSearchSnapshot({
     query: {
-      q: keyword.value.trim() || undefined,
-      types: filters.type ? [filters.type] : [],
-      programs: filters.program ? [filters.program] : [],
-      territories: filters.terr ? [filters.terr] : [],
-      variables: filters.variable && variableIdByName.has(filters.variable) ? [variableIdByName.get(filters.variable)!] : [],
-      regions: filters.ra ? [filters.ra] : [],
+      ...mapQuery.value,
       sortby: ascending.value ? 'title' : '-title',
     },
     total: total.value,

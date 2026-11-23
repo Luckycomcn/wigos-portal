@@ -8,9 +8,16 @@ const env = loadEnv('production', process.cwd(), 'VITE_')
 const base = (process.env.VITE_WIGOS_GOFC_URL?.trim() || env.VITE_WIGOS_GOFC_URL?.trim() || 'https://wmo-resource-catalogue.labs.wis2dev.io').replace(/\/+$/, '')
 const collection = `${base}/collections/wigos-observing-facility-metadata`
 const codes = await readFile(new URL('../src/data/wmdrCodes.ts', import.meta.url), 'utf8')
-const types = [...codes.matchAll(/\{ id: '([^']+)', title: '[^']*', domain: '([^']+)' \}/g)].map(m => ({ id: m[1], domain: m[2] }))
+const types = [...codes.matchAll(/\{ id: '([^']+)', title: '[^']*', domain: '[^']+' \}/g)].map(m => ({ id: m[1] }))
+const manifestFile = new URL('../src/data/stationOverview.json', import.meta.url)
+const snapshot = process.argv.includes('--from-snapshot')
+  ? JSON.parse(await readFile(manifestFile, 'utf8'))
+  : null
+if (snapshot && (process.argv.includes('--refresh') || snapshot.source !== collection)) {
+  throw new Error('Snapshot rebuild requires the same catalogue and cannot refresh data')
+}
 const cacheDir = new URL('../tmp/overview-source/', import.meta.url)
-await mkdir(cacheDir, { recursive: true })
+if (!snapshot) await mkdir(cacheDir, { recursive: true })
 const records = new Map()
 const typeStats = {}
 let expected = 0, unmapped = 0
@@ -55,20 +62,39 @@ async function loadType(type) {
   for (const f of features) {
     const c = f.geometry?.coordinates
     if (f.geometry?.type !== 'Point' || !c || !Number.isFinite(c[0]) || !Number.isFinite(c[1]) || Math.abs(c[0]) > 180 || Math.abs(c[1]) > 90) { unmapped++; missing++; continue }
-    if (records.has(f.id)) throw new Error(`Duplicate facility ${f.id}`)
-    const lat = Math.max(-85.05112878, Math.min(85.05112878, c[1])) * Math.PI / 180
-    records.set(f.id, { id: f.id, type: type.id, domain: type.domain, lon: c[0], lat: c[1], x: (c[0] + 180) / 360, y: (1 - Math.log(Math.tan(Math.PI / 4 + lat / 2)) / Math.PI) / 2 })
+    addPoint(f.id, type.id, c[0], c[1])
   }
   typeStats[type.id] = { total, mapped: total - missing, unmapped: missing }
   console.log(`${type.id}: ${total}`)
 }
-// Keep upstream load bounded.
-for (let i = 0; i < types.length; i += 3) await Promise.all(types.slice(i, i + 3).map(loadType))
-const all = await json(`${collection}/items?f=json&limit=1&properties=title`)
-if (expected !== all.numberMatched) throw new Error(`Type coverage ${expected} differs from catalogue ${all.numberMatched}; refusing to publish partial overview`)
+function addPoint(id, type, lon, lat) {
+  if (typeof id !== 'string' || !id || !Number.isFinite(lon) || !Number.isFinite(lat) || Math.abs(lon) > 180 || Math.abs(lat) > 90) {
+    throw new Error(`Invalid station point for ${type}`)
+  }
+  if (records.has(id)) throw new Error(`Duplicate facility ${id}`)
+  const radians = Math.max(-85.05112878, Math.min(85.05112878, lat)) * Math.PI / 180
+  records.set(id, { id, type, lon, lat, x: (lon + 180) / 360, y: (1 - Math.log(Math.tan(Math.PI / 4 + radians / 2)) / Math.PI) / 2 })
+}
+if (snapshot) {
+  for (const type of types) {
+    const stats = snapshot.pointFiles[type.id]
+    const rows = JSON.parse(await readFile(new URL(`../public/${stats.path}`, import.meta.url), 'utf8'))
+    if (rows.length !== stats.mapped || stats.total !== stats.mapped + stats.unmapped) throw new Error(`Incomplete snapshot for ${type.id}`)
+    for (const [id, lon, lat] of rows) addPoint(id, type.id, lon, lat)
+    typeStats[type.id] = { total: stats.total, mapped: stats.mapped, unmapped: stats.unmapped }
+    expected += stats.total
+    unmapped += stats.unmapped
+  }
+  if (expected !== snapshot.total) throw new Error('Incomplete snapshot coverage')
+} else {
+  // Keep upstream load bounded.
+  for (let i = 0; i < types.length; i += 3) await Promise.all(types.slice(i, i + 3).map(loadType))
+  const all = await json(`${collection}/items?f=json&limit=1&properties=title`)
+  if (expected !== all.numberMatched) throw new Error(`Type coverage ${expected} differs from catalogue ${all.numberMatched}; refusing to publish partial overview`)
+}
 const points = [...records.values()].sort((a,b) => a.id.localeCompare(b.id))
 if (points.length + unmapped !== expected) throw new Error('Overview accounting mismatch')
-const version = createHash('sha256').update('overview-v4-exact-type-points').update(JSON.stringify(points)).update(JSON.stringify(types.map(t => typeStats[t.id]))).digest('hex').slice(0, 16)
+const version = createHash('sha256').update('overview-v5-individual-stations').update(JSON.stringify(points)).update(JSON.stringify(types.map(t => typeStats[t.id]))).digest('hex').slice(0, 16)
 const root = new URL(`../public/data/station-overview/${version}/`, import.meta.url)
 const maxZoom = 5, extent = 4096
 let bytes = 0, tileCount = 0
@@ -100,35 +126,27 @@ for (let z = 0; z <= maxZoom; z++) {
     const x = Math.max(0, Math.min(n - 1, Math.floor(point.x * n)))
     const y = Math.max(0, Math.min(n - 1, Math.floor(point.y * n)))
     const px = Math.round((point.x * n - x) * extent), py = Math.round((point.y * n - y) * extent)
-    const key = `${x}/${y}`; if (!tiles.has(key)) tiles.set(key, new Map())
-    // Coarser global overview avoids repeatedly drawing thousands of overlapping
-    // symbols while basemap tiles arrive. Regional views retain finer detail.
-    const cellSize = z <= 2 ? 128 : 64 // 16px globally; 8px regionally (512px tiles).
-    const cell = `${Math.floor(px / cellSize)},${Math.floor(py / cellSize)},${point.domain}`
-    const old = tiles.get(key).get(cell)
-    if (old) old.count++
-    else tiles.get(key).set(cell, { ...point, px, py, count: 1 })
+    const key = `${x}/${y}`
+    if (!tiles.has(key)) tiles.set(key, [])
+    tiles.get(key).push({ ...point, px, py, count: 1 })
   }
   for (let x = 0; x < n; x++) {
     await mkdir(new URL(`${z}/${x}/`, root), { recursive: true })
     for (let y = 0; y < n; y++) {
-      const data = tile([...(tiles.get(`${x}/${y}`)?.values() ?? [])])
+      const data = tile(tiles.get(`${x}/${y}`) ?? [])
       await writeFile(new URL(`${z}/${x}/${y}.pbf`, root), data)
       bytes += data.length; tileCount++
     }
   }
 }
-await mkdir(new URL('points/', root), { recursive: true })
-const pointFiles = {}
-for (const type of types) {
-  // Unlike the overview representatives, these retain EVERY valid station per
-  // exact type, so filtering does not lose minority types inside colour cells.
+const pointFiles = snapshot?.pointFiles ?? {}
+if (!snapshot) await mkdir(new URL('points/', root), { recursive: true })
+for (const type of snapshot ? [] : types) {
   const rows = points.filter(p => p.type === type.id).map(p => [p.id, Number(p.lon.toFixed(6)), Number(p.lat.toFixed(6))])
   await writeFile(new URL(`points/${type.id}.json`, root), JSON.stringify(rows))
   pointFiles[type.id] = { ...typeStats[type.id], path: `data/station-overview/${version}/points/${type.id}.json` }
 }
-const manifest = { version, generatedAt: new Date().toISOString(), source: collection, total: expected, mapped: points.length, unmapped, maxZoom, tileSize: 512, path: `data/station-overview/${version}/{z}/{x}/{y}.pbf`, tileCount, bytes, pointFiles }
-const manifestFile = new URL('../src/data/stationOverview.json', import.meta.url)
+const manifest = { version, generatedAt: snapshot?.generatedAt ?? new Date().toISOString(), source: collection, total: expected, mapped: points.length, unmapped, maxZoom, tileSize: 512, path: `data/station-overview/${version}/{z}/{x}/{y}.pbf`, tileCount, bytes, pointFiles }
 await writeFile(new URL('../src/data/stationOverview.json.tmp', import.meta.url), JSON.stringify(manifest, null, 2) + '\n')
 await rename(new URL('../src/data/stationOverview.json.tmp', import.meta.url), manifestFile)
 console.log(JSON.stringify(manifest, null, 2))

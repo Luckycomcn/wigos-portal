@@ -10,8 +10,11 @@
         <label class="export-label">{{ $t('export.scope') }}</label>
         <div class="form-control export-scope-readonly">{{ $t('export.scopeFiltered', { count: filteredCount.toLocaleString() }) }}</div>
         <div class="export-note export-note--inline">{{ $t('export.bulkLimitedNote', { limit: EXPORT_LIMIT.toLocaleString(), all: allCount.toLocaleString() }) }}</div>
-        <label class="export-label">{{ $t('export.format') }}</label>
-        <div class="form-control">JSON</div>
+        <label class="export-label" for="bulk-export-format">{{ $t('export.format') }}</label>
+        <select id="bulk-export-format" v-model="bulkFormat" :disabled="bulkBusy" class="form-control">
+          <option value="json">JSON</option>
+          <option value="zip">ZIP</option>
+        </select>
         <label class="export-label">{{ $t('export.fields') }}</label>
         <select v-model="fieldSet" :disabled="bulkBusy" class="form-control">
           <option value="mandatory">{{ $t('export.fieldsMandatory') }}</option>
@@ -34,6 +37,11 @@
         <div class="export-note">{{ $t('export.wmdrNote') }}</div>
         <label class="export-label">{{ $t('export.wigosStationIdentifier') }}</label>
         <input v-model="wigosId" class="form-control" placeholder="0-20000-0-89057" />
+        <label class="export-label" for="single-export-format">{{ $t('export.format') }}</label>
+        <select id="single-export-format" v-model="singleFormat" :disabled="singleBusy" class="form-control">
+          <option value="json">JSON</option>
+          <option value="zip">ZIP</option>
+        </select>
         <div class="export-actions">
           <button class="btn btn-export" type="button" :disabled="singleBusy" @click="genSingle">{{ $t('export.generateExport') }}</button>
           <button class="btn btn-default" type="button" :disabled="singleBusy || !singleBlob" @click="downloadSingle">{{ $t('export.download') }}</button>
@@ -54,6 +62,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import { strToU8, zip } from 'fflate'
 import { loadSearchSnapshot } from '../stores/searchExport'
 import { queryFeatures, searchFacilities, WIGOS_COLLECTION_URL, WIGOS_ITEMS_URL, type WigosFeature } from '../api/wigos'
 import { fetchDownloadRecord } from '../utils/catalogueDownload'
@@ -68,6 +77,9 @@ const snapshot = loadSearchSnapshot()
 const filteredCount = ref(snapshot?.total ?? 0)
 const allCount = ref(0)
 const fieldSet = ref<'mandatory' | 'full'>('mandatory')
+type ExportFormat = 'json' | 'zip'
+const bulkFormat = ref<ExportFormat>('json')
+const singleFormat = ref<ExportFormat>('json')
 const wigosId = ref('0-20000-0-89057')
 const bulkBusy = ref(false)
 const singleBusy = ref(false)
@@ -92,12 +104,12 @@ onMounted(async () => {
     allCount.value = (await queryFeatures({ limit: 1, properties: ['title'] })).numberMatched
   } catch (error) { bulkHint.value = t('export.remoteError', { message: String(error) }) }
 })
-watch(fieldSet, () => {
+watch([fieldSet, bulkFormat], () => {
   bulkBlob.value = null
   bulkPreview.value = ''
   bulkHint.value = ''
 })
-watch(wigosId, () => {
+watch([wigosId, singleFormat], () => {
   singleVersion++
   singleBusy.value = false
   singleBlob.value = null
@@ -147,7 +159,9 @@ async function genBulk() {
       if (!result.features.length) break
     }
     const content = JSON.stringify({ type: 'FeatureCollection', features: records, numberReturned: records.length }, null, 2)
-    bulkBlob.value = new Blob([content], { type: 'application/geo+json;charset=utf-8' })
+    const blob = await createExportBlob(content, 'wigos-filtered.json', bulkFormat.value)
+    controller.signal.throwIfAborted()
+    bulkBlob.value = blob
     bulkPreview.value = content.slice(0, 12000)
     bulkHint.value = t('export.generated', { count: records.length })
   } catch (error) {
@@ -156,7 +170,7 @@ async function genBulk() {
   } finally { bulkBusy.value = false }
 }
 function downloadBulk() {
-  if (bulkBlob.value) trigger(bulkBlob.value, 'wigos-filtered.json')
+  if (bulkBlob.value) trigger(bulkBlob.value, `wigos-filtered.${bulkFormat.value}`)
 }
 function cancelBulk() { controller?.abort() }
 async function genSingle() {
@@ -171,15 +185,26 @@ async function genSingle() {
     const record = await fetchDownloadRecord(id)
     if (version !== singleVersion) return
     const content = JSON.stringify(record, null, 2)
+    const blob = await createExportBlob(content, `${id.replace(/[^\w-]/g, '_')}.json`, singleFormat.value)
+    if (version !== singleVersion) return
     singlePreview.value = content
-    singleBlob.value = new Blob([content], { type: 'application/geo+json;charset=utf-8' })
+    singleBlob.value = blob
     singleHint.value = t('export.generated', { count: 1 })
   } catch (error) {
     if (version === singleVersion) singleHint.value = t('export.remoteError', { message: String(error) })
   } finally { if (version === singleVersion) singleBusy.value = false }
 }
 function downloadSingle() {
-  if (singleBlob.value) trigger(singleBlob.value, `${wigosId.value.trim().replace(/[^\w-]/g, '_')}.json`)
+  if (singleBlob.value) trigger(singleBlob.value, `${wigosId.value.trim().replace(/[^\w-]/g, '_')}.${singleFormat.value}`)
+}
+async function createExportBlob(content: string, jsonName: string, format: ExportFormat): Promise<Blob> {
+  if (format === 'json') return new Blob([content], { type: 'application/geo+json;charset=utf-8' })
+  return new Promise((resolve, reject) => {
+    zip({ [jsonName]: strToU8(content) }, (error, bytes) => {
+      if (error) reject(error)
+      else resolve(new Blob([bytes], { type: 'application/zip' }))
+    })
+  })
 }
 function trigger(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)

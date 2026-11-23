@@ -67,7 +67,7 @@
             <div class="attr">
               <a v-if="reportBasemap === 'tianditu'" href="https://map.tianditu.gov.cn/" target="_blank" rel="noopener">© Tianditu</a>
               <span v-else-if="reportBasemap === 'amap'">© AMap</span>
-              <template v-else>{{ $t('stationReport.mapAttribution') }}</template>
+              <span v-else>OpenFreeMap</span>
             </div>
           </div>
         </div>
@@ -178,7 +178,7 @@ import { defaults as defaultControls } from 'ol/control/defaults'
 import { getFeature, featureToReport, WIGOS_ITEMS_URL, type WigosReport, type ReportObservation } from '../api/wigos'
 import { downloadCatalogueRecord } from '../utils/catalogueDownload'
 import { tiandituSource } from '../utils/tianditu'
-import { selectedBasemap } from '../utils/basemap'
+import type { Basemap } from '../utils/basemap'
 import { loadAmap, toGcj02 } from '../utils/amap'
 import { toLonLat } from 'ol/proj'
 import { useI18n } from 'vue-i18n'
@@ -199,7 +199,10 @@ const downloading = ref(false)
 const dlOpen = ref(false)
 const miniEl = ref<HTMLDivElement | null>(null)
 const miniMap = shallowRef<Map | null>(null)
-const reportBasemap = selectedBasemap.value
+const requestedBasemap = route.query.basemap
+const reportBasemap: Basemap = requestedBasemap === 'amap' || requestedBasemap === 'tianditu'
+  ? requestedBasemap
+  : 'osm'
 /** Vector world basemap of the locator map; its labels follow the UI language. */
 const miniWorldKind: WorldStyleKey | null = reportBasemap === 'osm' ? 'osm' : null
 let miniWorldLayer: LayerGroup | null = null

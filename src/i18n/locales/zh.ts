@@ -19,7 +19,7 @@ export default {
     "brandSub3": "系统门户"
   },
   "footer": {
-    "disclaimer": "图片和目录记录的权利归各自提供方所有。本门户不代表 WMO，也不表示获得其认可。",
+    "disclaimer": "本地图上所示的边界和名称以及所用的称谓，并不意味着世界气象组织或联合国正式认可或接受。",
     "attribution": "独立演示门户"
   },
   "menu": {
@@ -127,6 +127,7 @@ export default {
     "keywordPlaceholder": "按台站名称或 WIGOS 标识符搜索...",
     "results": "结果",
     "remoteCount": "WMO 资源目录中共 {count} 条记录",
+    "mapCount": "当前地图视野内有 {count} 个站点",
     "remoteNote": "显示 {count} / {total} 条匹配记录 · 目录时间戳 {date}",
     "remoteError": "无法查询 WMO 资源目录：{message}",
     "loadingRemote": "正在从 WMO 资源目录加载台站…",
@@ -287,8 +288,8 @@ export default {
   },
   "map": {
     "clusterCount": "{count} 个站点",
-    "filteredSnapshot": "筛选地图快照：{date} · 当前视野 {count} 个站点（密集点聚合）",
-    "overviewSnapshot": "站点概览（密集点聚合），快照更新：{date}",
+    "filteredSnapshot": "筛选地图快照：{date} · 当前视野 {count} 个站点",
+    "overviewSnapshot": "站点概览，快照更新：{date}",
     "overviewUnmapped": "{count} 条记录无有效点坐标",
     "overviewZoomHint": "点击地图中的圆点放大查看站点。",
     "identifying": "请稍候，正在识别台站…",

@@ -31,7 +31,8 @@ RUN rm -rf /usr/share/nginx/html/*
 ENV NGINX_ENVSUBST_FILTER=AMAP_SECURITY_JS_CODE
 COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY deploy/40-wigos-config.sh /docker-entrypoint.d/40-wigos-config.sh
-RUN chmod +x /docker-entrypoint.d/40-wigos-config.sh
+RUN sed -i 's/\r$//' /docker-entrypoint.d/40-wigos-config.sh \
+    && chmod +x /docker-entrypoint.d/40-wigos-config.sh
 COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 8080

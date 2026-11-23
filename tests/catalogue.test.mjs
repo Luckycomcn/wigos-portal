@@ -78,6 +78,23 @@ const titleSearchUrl = new URL(calls.at(-1))
 assert.equal(titleSearchUrl.searchParams.get('filter'), "properties.title LIKE 'o''hare'")
 assert.equal(titleSearchUrl.searchParams.has('q'), false)
 assert.equal(titleSearchUrl.searchParams.get('facilityType.id'), 'landFixed')
+await api.searchFacilities({
+  q: 'Station',
+  types: ['Air (fixed)', 'Air (mobile)'],
+  variables: [210, 216],
+  territories: ['CHE'],
+  offset: 25,
+})
+const multiSearchParams = new URL(calls.at(-1)).searchParams
+assert.equal(multiSearchParams.get('filter'), "properties.title LIKE 'station'")
+assert.equal(multiSearchParams.get('facilityType.id'), 'airFixed|airMobile')
+assert.equal(multiSearchParams.get('observations.observedProperty.id'), '210|216')
+assert.equal(multiSearchParams.get('territories.territory.id'), 'CHE')
+assert.equal(multiSearchParams.get('offset'), '25')
+const unmappedSample = { ...sample, geometry: null }
+assert.equal(api.featureToRow(unmappedSample), null)
+assert.equal(api.featureToRow(unmappedSample, true).id, sample.id)
+assert.equal(api.featureToRow(unmappedSample, true).lat, null)
 globalThis.fetch = async (url, options) => {
   calls.push(String(url))
   if (options.signal.aborted) throw new DOMException('Aborted', 'AbortError')

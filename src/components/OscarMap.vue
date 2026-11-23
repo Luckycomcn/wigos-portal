@@ -153,7 +153,14 @@ interface HoverInfo {
   stationId?: string
 }
 
-const props = defineProps<{ visibleStations?: Station[]; mapQuery?: FacilitySearchParams }>()
+const props = defineProps<{
+  visibleStations?: Station[]
+  mapQuery?: FacilitySearchParams
+  focusExactMatch?: boolean
+}>()
+const emit = defineEmits<{
+  viewportCount: [query: FacilitySearchParams, count: number | undefined, failed: boolean]
+}>()
 
 const legend: { labelKey: string; domain: StationDomain; color: string }[] = [
   { labelKey: 'map.legend.air', domain: 'air', color: domainColors.air },
@@ -182,13 +189,19 @@ const router = useRouter()
 
 /** Station reports open in a new tab; hash routing resolves relative to the deployed base. */
 function reportHref(wigosId: string): string {
-  return router.resolve({ name: 'stationReportDetails', params: { wigosId } }).href
+  return router.resolve({
+    name: 'stationReportDetails',
+    params: { wigosId },
+    query: basemap.value === 'osm' ? {} : { basemap: basemap.value },
+  }).href
 }
 const dlOpen = ref(false)
 import { selectedBasemap, rememberBasemap, type Basemap } from '../utils/basemap'
 const DEFAULT_CENTER = [0, 0]
 const WORLD_EXTENT = transformExtent([-180, -85, 180, 85], 'EPSG:4326', 'EPSG:3857')
 const DEFAULT_ZOOM = 2.2
+// At the equator, 160 CSS pixels represent 5,000 km at this resolution.
+const DEFAULT_WORLD_RESOLUTION = 5_000_000 / 160
 const CHINA_CENTER: [number, number] = [104, 35]
 const CHINA_ZOOM = 4
 // Start from 'osm' as the applied baseline; onMounted applies selectedBasemap
@@ -292,7 +305,6 @@ const mapLoadTotal = ref(0)
 const filteredSnapshotDate = ref('')
 const filteredUnmapped = ref(0)
 let viewportController: AbortController | undefined
-let lastMove = 0
 let pendingTimer = 0
 let hideTimer = 0
 let hoverKey = ''
@@ -383,63 +395,17 @@ function dotStyle(color: string, radius = 2) {
   })
 }
 
-function clusterFeaturesByDistance(features: Feature[], distance: number): Feature[] {
-  if (!(distance > 0)) return features
-  type Group = { seed: Feature; x: number; y: number; count: number }
-  const buckets = new globalThis.Map<string, Group[]>()
-  const groups: Group[] = []
-  const identity = (feature: Feature) => String(feature.get('wigosId') ?? feature.get('station')?.wigosId ?? '')
-  // Stable seeds keep results independent of page arrival order. A seed is an
-  // actual station, never a cell centre or averaged coordinate.
-  const ordered = [...features].sort((a, b) => identity(a).localeCompare(identity(b)))
-  const radiusSquared = distance * distance
-  for (const feature of ordered) {
-    const [x, y] = (feature.getGeometry() as Point).getCoordinates() as [number, number]
-    const col = Math.floor(x / distance), row = Math.floor(y / distance)
-    const domain = String(feature.get('domain'))
-    let nearest: Group | undefined
-    let best = radiusSquared
-    // Buckets only accelerate neighbour lookup. The circular distance test
-    // spans bucket boundaries and determines membership, not the grid cell.
-    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
-      for (const group of buckets.get(`${col + dx},${row + dy},${domain}`) ?? []) {
-        const squared = (x - group.x) ** 2 + (y - group.y) ** 2
-        if (squared <= radiusSquared && (!nearest || squared < best)) { nearest = group; best = squared }
-      }
-    }
-    if (nearest) nearest.count++
-    else {
-      const group = { seed: feature, x, y, count: 1 }
-      const key = `${col},${row},${domain}`
-      const bucket = buckets.get(key) ?? []
-      bucket.push(group); buckets.set(key, bucket); groups.push(group)
-    }
-  }
-  return groups.map(({ seed, count }) => {
-    if (count === 1) return seed
-    const cluster = new Feature({ geometry: seed.getGeometry()!.clone(), cluster: true, count,
-      domain: seed.get('domain'), representativeId: identity(seed) })
-    cluster.setStyle(seed.getStyle())
-    return cluster
-  })
-}
-
 function buildCloud(): Feature[] {
   const stations = props.visibleStations ?? liveFeatures.value.flatMap(f => {
     const station = featureToStation(f)
     return station ? [station] : []
   })
-  const features = stations.map(s => {
+  return stations.map(s => {
     const feature = new Feature({ geometry: new Point(mapCoordinate(s.lon, s.lat)), station: s, domain: s.domain,
       wigosId: props.visibleStations ? undefined : s.wigosId })
     feature.setStyle(tileStyles[s.domain])
     return feature
   })
-  const view = mapRef.value?.getView()
-  const zoom = view?.getZoom() ?? DEFAULT_ZOOM
-  if (zoom >= 6) return features
-  const distance = (view?.getResolution() ?? 40000) * (zoom < 4 ? 16 : 8)
-  return clusterFeaturesByDistance(features, distance)
 }
 
 function stationToHover(s: Station): HoverInfo {
@@ -480,24 +446,43 @@ function hoverFromFeature(feature: WigosFeature): HoverInfo {
   }
 }
 
-function onPointerMove(evt: { pixel: number[]; coordinate: number[]; originalEvent: PointerEvent }) {
+function stationAtPixel(map: Map, pixel: number[]) {
+  if (tilesActive.value) {
+    const coordinate = map.getCoordinateFromPixel(pixel)
+    const resolution = map.getView().getResolution()
+    if (!coordinate || !resolution) return undefined
+    const [x, y] = coordinate as [number, number]
+    const radius = 8 * resolution
+    const candidates = stationTiles.getFeaturesInExtent([x - radius, y - radius, x + radius, y + radius])
+    let nearest: (typeof candidates)[number] | undefined
+    let bestDistance = radius ** 2
+    for (const feature of candidates) {
+      if (feature.get('layer') !== 'hits') continue
+      const [pointX, pointY] = feature.getGeometry()?.getFlatCoordinates() ?? []
+      if (pointX === undefined || pointY === undefined) continue
+      const distance = (pointX - x) ** 2 + (pointY - y) ** 2
+      if (distance > bestDistance || (nearest && distance === bestDistance)) continue
+      nearest = feature
+      bestDistance = distance
+    }
+    return nearest
+  }
+  return map.forEachFeatureAtPixel(pixel, (feature) => feature, {
+    hitTolerance: 6,
+    layerFilter: layer => layer === vectorRef.value,
+  })
+}
+
+function onPointerMove(evt: { pixel: number[] }) {
   const map = mapRef.value
   if (!map) return
   if (isOverPopup.value) return
-  const now = Date.now()
-  if (now - lastMove < 120) return
-  lastMove = now
   window.clearTimeout(pendingTimer)
   const [px, py] = evt.pixel
   const pointerVersion = ++hoverRequestVersion
-  pendingTimer = window.setTimeout(async () => {
-    if (isOverPopup.value) return
-    const tileHits = tilesActive.value ? await stationTiles.getFeatures(evt.pixel) : []
+  pendingTimer = window.setTimeout(() => {
     if (pointerVersion !== hoverRequestVersion || isOverPopup.value || mapRef.value !== map) return
-    const hit = tileHits[0] ?? map.forEachFeatureAtPixel(evt.pixel, (f) => f, {
-      hitTolerance: 6,
-      layerFilter: layer => layer === stationTiles || layer === vectorRef.value,
-    }) as Feature | undefined
+    const hit = stationAtPixel(map, evt.pixel)
     const station = (hit?.get('station') as Station | undefined) ?? null
     const wigosId = (hit?.get('wigosId') ?? hit?.get('id') ?? hit?.get('_id')) as string | undefined
     const key = wigosId || (station ? station.wigosId : '')
@@ -613,9 +598,10 @@ const downloadXml = () => runDownload('xml')
 const downloadWmdrV2 = () => runDownload('json')
 function currentBbox(): [number, number, number, number] | null {
   const map = mapRef.value
-  if (!map) return null
+  const size = map?.getSize()
+  if (!map || !size?.[0] || !size[1] || !mapEl.value?.clientWidth || !mapEl.value.clientHeight) return null
   const view = map.getView()
-  const ext = view.calculateExtent(map.getSize())
+  const ext = view.calculateExtent(size)
   let [minLon, minLat, maxLon, maxLat] = transformExtent(ext, 'EPSG:3857', 'EPSG:4326')
   if (basemap.value === 'amap') {
     const [gcjWest, gcjSouth] = toGcj02(minLon, minLat)
@@ -645,6 +631,9 @@ function selectedProgramIds(): string[] {
     .filter(Boolean)
 }
 
+let focusedExactQuery: FacilitySearchParams | undefined
+let viewportNeedsSize = false
+
 async function loadViewport() {
   if (props.visibleStations) return
   viewportController?.abort()
@@ -663,6 +652,7 @@ async function loadViewport() {
   selectStationSource()
   stationTiles.setVisible(tilesActive.value)
   if (tilesActive.value) {
+    viewportNeedsSize = false
     loadSeq++
     liveFeatures.value = []
     vectorRef.value?.getSource()?.clear()
@@ -675,7 +665,11 @@ async function loadViewport() {
     return
   }
   const bbox = currentBbox()
+  viewportNeedsSize = !bbox
   if (!bbox) return
+  // An exact station lookup can start outside the visible map.
+  const shouldFocus = props.focusExactMatch && query.q?.startsWith('0-') && focusedExactQuery !== query
+  emit('viewportCount', query, undefined, false)
   const controller = new AbortController()
   viewportController = controller
   const seq = ++loadSeq
@@ -684,8 +678,11 @@ async function loadViewport() {
   matchedCount.value = 0
   liveFeatures.value = []
   vectorRef.value?.getSource()?.clear()
-  hover.value = null
-  selected.value = null
+  if (focusedExactQuery !== query) {
+    hover.value = null
+    selected.value = null
+    popupPinned.value = false
+  }
   const received = new globalThis.Map<string, WigosFeature>()
   let paintTimer = 0
   const paint = () => {
@@ -699,7 +696,7 @@ async function loadViewport() {
     source?.addFeatures(buildCloud())
   }
   try {
-    const result = await loadFilteredMap({ ...query, bbox, signal: controller.signal }, (delta, loaded, total) => {
+    const result = await loadFilteredMap({ ...query, bbox: shouldFocus ? undefined : bbox, signal: controller.signal }, (delta, loaded, total) => {
       if (seq !== loadSeq || controller.signal.aborted) return
       for (const feature of delta) received.set(feature.id, feature)
       mapLoaded.value = loaded
@@ -712,9 +709,18 @@ async function loadViewport() {
       paint()
       filteredSnapshotDate.value = result.snapshotDate ?? ''
       filteredUnmapped.value = result.unmapped
+      if (shouldFocus) {
+        focusedExactQuery = query
+        const feature = result.features[0]
+        if (feature) flyToFocusedStation(featureToStation(feature))
+      }
+      emit('viewportCount', query, matchedCount.value, false)
     }
   } catch (cause) {
-    if (seq === loadSeq && !controller.signal.aborted) mapError.value = cause instanceof Error ? cause.message : String(cause)
+    if (seq === loadSeq && !controller.signal.aborted) {
+      mapError.value = cause instanceof Error ? cause.message : String(cause)
+      emit('viewportCount', query, undefined, true)
+    }
   } finally {
     window.clearTimeout(paintTimer)
     if (seq === loadSeq) loading.value = false
@@ -737,7 +743,7 @@ onMounted(() => {
     layers: [stationTiles, vector],
     view: new View({
       center: fromLonLat(DEFAULT_CENTER),
-      zoom: DEFAULT_ZOOM,
+      resolution: DEFAULT_WORLD_RESOLUTION,
       minZoom: -2,
       maxZoom: 18,
       extent: WORLD_EXTENT,
@@ -757,28 +763,24 @@ onMounted(() => {
     layers: [landLayer, gridLayer, ...tiandituLayers],
     view: map.getView(),
   })
-  map.on('singleclick', async (evt) => {
+  map.on('singleclick', (evt) => {
     if (tilesActive.value) {
-      const source = tileSource
-      const hits = await stationTiles.getFeatures(evt.pixel)
-      if (mapRef.value !== map || !tilesActive.value || source !== tileSource) return
-      if (Number(hits[0]?.get('count') ?? 1) > 1) {
+      const hit = stationAtPixel(map, evt.pixel)
+      if (Number(hit?.get('count') ?? 1) > 1) {
         map.getView().animate({ center: evt.coordinate, zoom: Math.min(overview.maxZoom + 1, (map.getView().getZoom() ?? 2) + 2), duration: 250 })
         return
       }
+      if (hit) onPointerMove(evt)
+      return
     }
     identifying.value = true
     window.setTimeout(() => {
       identifying.value = false
     }, 250)
     const hit = map.forEachFeatureAtPixel(evt.pixel, (feat) => feat)
-    if (hit?.get('cluster')) {
-      map.getView().animate({ center: (hit.getGeometry() as Point).getCoordinates(), zoom: (map.getView().getZoom() ?? 2) + 2, duration: 250 })
-      return
-    }
     selected.value = (hit?.get('station') as Station | undefined) ?? null
   })
-  map.on('pointermove', (e) => onPointerMove(e as unknown as { pixel: number[]; coordinate: number[]; originalEvent: PointerEvent }))
+  map.on('pointermove', onPointerMove)
   map.on('postrender', syncAmap)
   map.on('movestart', () => { viewportController?.abort(); loadSeq++; if (!tilesActive.value) loading.value = false })
   map.on('moveend', () => {
@@ -793,27 +795,27 @@ onMounted(() => {
   ;(map.getTargetElement() as HTMLElement | null)?.addEventListener('pointerleave', () => {
     window.clearTimeout(hideTimer)
     hideTimer = window.setTimeout(() => {
-      if (!isOverPopup.value) {
+      if (!isOverPopup.value && !popupPinned.value) {
         hover.value = null
         hoverKey = ''
       }
     }, 500)
   })
   mapRef.value = map
-  fitWorld()
   map.getView().on('change:resolution', () => { if (tilesActive.value) selectStationSource() })
   void loadWorldLand()
   if (!props.visibleStations) {
     void loadViewport()
   }
   resizeObserver.value = new ResizeObserver(() => {
-    const view = map.getView()
-    const previousSize = map.getSize()
-    const previousWorldZoom = previousSize ? view.getZoomForResolution((WORLD_EXTENT[2]! - WORLD_EXTENT[0]!) / previousSize[0]!) : undefined
-    const showingWorld = basemap.value === 'osm' && previousWorldZoom != null && Math.abs((view.getZoom() ?? 0) - previousWorldZoom) < 0.05
+    const previousResolution = fullWorldResolution(map.getSize())
+    const resolution = map.getView().getResolution()
+    const showingWorld = basemap.value === 'osm' && previousResolution !== undefined && resolution !== undefined
+      && Math.abs(resolution / previousResolution - 1) < 0.02
     map.updateSize()
     basemapRef.value?.updateSize()
-    if (showingWorld) fitWorld()
+    if (showingWorld) resetWorldView()
+    if (viewportNeedsSize && currentBbox()) void loadViewport()
   })
   resizeObserver.value.observe(mapEl.value)
   void selectBasemap({ target: { value: selectedBasemap.value } } as unknown as Event)
@@ -881,20 +883,28 @@ function zoomBy(delta: number) {
   view.animate({ zoom: zoom + delta, duration: 180 })
 }
 
-function fitWorld(duration = 0) {
+function fullWorldResolution(size?: number[]) {
+  const [width, height] = size ?? []
+  if (!width || !height) return undefined
+  return Math.max(
+    (WORLD_EXTENT[2]! - WORLD_EXTENT[0]!) / width,
+    (WORLD_EXTENT[3]! - WORLD_EXTENT[1]!) / height,
+  )
+}
+
+function resetWorldView(duration = 0) {
   const map = mapRef.value
-  const size = map?.getSize()
-  if (!map || !size?.[0]) return
-  const view = map.getView()
-  // Fill wide containers with one world; polar latitudes may fall outside the viewport.
-  const resolution = (WORLD_EXTENT[2]! - WORLD_EXTENT[0]!) / size[0]
-  view.animate({ center: fromLonLat(DEFAULT_CENTER), resolution, duration })
+  map?.getView().animate({
+    center: fromLonLat(DEFAULT_CENTER),
+    resolution: fullWorldResolution(map.getSize()) ?? DEFAULT_WORLD_RESOLUTION,
+    duration,
+  })
 }
 
 function resetView() {
   const world = basemap.value === 'osm'
   if (world) {
-    fitWorld(250)
+    resetWorldView(250)
     return
   }
   mapRef.value?.getView().animate({
@@ -1038,21 +1048,24 @@ async function selectBasemap(event: Event) {
   view?.cancelAnimations()
   view?.setMinZoom(next === 'amap' ? 2 : next === 'tianditu' ? 1 : -2)
   view?.setCenter(isWorld ? fromLonLat(DEFAULT_CENTER) : mapCoordinate(CHINA_CENTER[0], CHINA_CENTER[1]))
-  view?.setZoom(isWorld ? DEFAULT_ZOOM : CHINA_ZOOM)
-  if (isWorld) fitWorld()
+  if (isWorld) resetWorldView()
+  else view?.setZoom(CHINA_ZOOM)
   syncAmap()
 }
 
-function flyToFocusedStation() {
+function flyToFocusedStation(focus = focusedStation.value) {
   const map = mapRef.value
-  const focus = focusedStation.value
   if (!map || !focus || props.visibleStations) return
+  window.clearTimeout(hideTimer)
+  window.clearTimeout(pendingTimer)
+  hoverRequestVersion++
   selected.value = focus
   hover.value = stationToHover(focus)
   hoverKey = focus.wigosId
   popupPinned.value = true
   const view = map.getView()
-  view.animate({ center: mapCoordinate(focus.lon, focus.lat), zoom: Math.max(view.getZoom() ?? 2.2, 6), duration: 600 }, () => {
+  view.animate({ center: mapCoordinate(focus.lon, focus.lat), zoom: Math.max(view.getZoom() ?? 2.2, 6), duration: 600 }, (completed) => {
+    if (!completed || selected.value?.wigosId !== focus.wigosId) return
     const px = map.getPixelFromCoordinate(mapCoordinate(focus.lon, focus.lat))
     if (px) popupPos.value = clampPopup(px[0] + 14, px[1] + 14)
   })

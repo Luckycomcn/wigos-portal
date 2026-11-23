@@ -19,7 +19,7 @@ export default {
     "brandSub3": "Portail du système"
   },
   "footer": {
-    "disclaimer": "Les images et les données du catalogue restent la propriété de leurs fournisseurs. Ce portail ne représente pas l’OMM et ne bénéficie pas de son approbation.",
+    "disclaimer": "Les frontières et les noms figurant sur cette carte, ainsi que les désignations qui y sont employées, n’impliquent ni approbation ni acceptation officielles de la part de l’Organisation météorologique mondiale ou de l’Organisation des Nations Unies.",
     "attribution": "Portail de démonstration indépendant"
   },
   "common": {
@@ -120,6 +120,7 @@ export default {
     "keywordPlaceholder": "Rechercher par nom de station ou identifiant WIGOS...",
     "results": "Résultats",
     "remoteCount": "{count} enregistrements dans le catalogue de ressources de l’OMM",
+    "mapCount": "{count} stations dans la vue actuelle de la carte",
     "remoteNote": "{count} enregistrements sur {total} correspondances · horodatage du catalogue {date}",
     "remoteError": "Impossible d’interroger le catalogue de ressources de l’OMM : {message}",
     "loadingRemote": "Chargement des stations du catalogue de ressources de l’OMM…",
@@ -176,8 +177,8 @@ export default {
   },
   "map": {
     "clusterCount": "{count} stations",
-    "filteredSnapshot": "Carte filtrée : instantané du {date} · {count} stations dans cette vue (points denses regroupés)",
-    "overviewSnapshot": "Aperçu des stations (points denses regroupés), instantané : {date}",
+    "filteredSnapshot": "Carte filtrée : instantané du {date} · {count} stations dans cette vue",
+    "overviewSnapshot": "Aperçu des stations, instantané : {date}",
     "overviewUnmapped": "{count} fiches sans coordonnées ponctuelles valides",
     "overviewZoomHint": "Cliquez sur ce point pour zoomer et consulter les stations.",
     "identifying": "Veuillez patienter, identification des stations...",
