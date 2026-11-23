@@ -172,7 +172,7 @@ function goAdvanced() {
 <style scoped lang="scss">
 @media (min-width: 900px) {
   .home-hero :deep(.oscar-ol-map) {
-    height: clamp(520px, calc(100dvh - 360px), 780px);
+    height: clamp(520px, calc(100dvh - 312px), 820px);
   }
 }
 

@@ -2,7 +2,7 @@
   <div class="oscar-map-shell">
     <p v-if="downloadError" class="map-download-error" role="alert">{{ downloadError }}</p>
     <div v-show="identifying" class="oscar-map-wait">{{ $t('map.identifying') }}</div>
-    <div class="oscar-ol-wrap" ref="wrapEl">
+    <div class="oscar-ol-wrap" :class="{ 'oscar-ol-wrap--single-world': basemap === 'osm' }" ref="wrapEl">
       <div ref="amapEl" class="oscar-amap" :style="{ visibility: basemap === 'amap' ? 'visible' : 'hidden' }"></div>
       <div ref="basemapEl" class="oscar-basemap" aria-hidden="true"></div>
       <div ref="mapEl" class="map oscar-ol-map"></div>
@@ -113,9 +113,9 @@ import GeoJSON from 'ol/format/GeoJSON'
 import Point from 'ol/geom/Point'
 import Polygon from 'ol/geom/Polygon'
 import LineString from 'ol/geom/LineString'
-import { fromLonLat, toLonLat, transformExtent } from 'ol/proj'
+import { fromLonLat, getPointResolution, toLonLat, transformExtent } from 'ol/proj'
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style'
-import ScaleLine from 'ol/control/ScaleLine'
+import Control from 'ol/control/Control'
 import { defaults as defaultControls } from 'ol/control/defaults'
 import type { Station, StationDomain } from '../data/stations'
 import { domainColors } from '../data/stations'
@@ -727,6 +727,37 @@ async function loadViewport() {
   }
 }
 
+function createMetricScaleLine() {
+  const element = document.createElement('div')
+  element.className = 'ol-scale-line ol-unselectable'
+  const line = document.createElement('div')
+  line.className = 'ol-scale-line-inner'
+  element.append(line)
+  return new Control({
+    element,
+    render({ frameState }) {
+      if (!frameState) {
+        element.hidden = true
+        return
+      }
+      const { projection, resolution, center } = frameState.viewState
+      const metersPerPixel = getPointResolution(projection, resolution, center, 'm')
+      const minimumDistance = 120 * metersPerPixel
+      if (!(minimumDistance > 0) || !Number.isFinite(minimumDistance)) {
+        element.hidden = true
+        return
+      }
+      const magnitude = 10 ** Math.floor(Math.log10(minimumDistance))
+      const step = [1, 2, 3, 5, 10].find(value => value * magnitude >= minimumDistance) ?? 10
+      const meters = step * magnitude
+      const label = meters >= 1000 ? `${meters / 1000} km` : `${meters} m`
+      if (line.textContent !== label) line.textContent = label
+      line.style.width = `${Math.round(meters / metersPerPixel)}px`
+      element.hidden = false
+    },
+  })
+}
+
 onMounted(() => {
   if (!mapEl.value || !basemapEl.value) return
   const vector = new VectorLayer({
@@ -738,7 +769,7 @@ onMounted(() => {
     target: mapEl.value,
     pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
     controls: defaultControls({ zoom: false, rotate: false }).extend([
-      new ScaleLine({ units: 'metric', minWidth: 100 }),
+      createMetricScaleLine(),
     ]),
     layers: [stationTiles, vector],
     view: new View({
@@ -781,7 +812,10 @@ onMounted(() => {
     selected.value = (hit?.get('station') as Station | undefined) ?? null
   })
   map.on('pointermove', onPointerMove)
-  map.on('postrender', syncAmap)
+  map.on('postrender', () => {
+    syncAmap()
+    clipWorldBasemap(map)
+  })
   map.on('movestart', () => { viewportController?.abort(); loadSeq++; if (!tilesActive.value) loading.value = false })
   map.on('moveend', () => {
     if (!tilesActive.value) {
@@ -808,13 +842,8 @@ onMounted(() => {
     void loadViewport()
   }
   resizeObserver.value = new ResizeObserver(() => {
-    const previousResolution = fullWorldResolution(map.getSize())
-    const resolution = map.getView().getResolution()
-    const showingWorld = basemap.value === 'osm' && previousResolution !== undefined && resolution !== undefined
-      && Math.abs(resolution / previousResolution - 1) < 0.02
     map.updateSize()
     basemapRef.value?.updateSize()
-    if (showingWorld) resetWorldView()
     if (viewportNeedsSize && currentBbox()) void loadViewport()
   })
   resizeObserver.value.observe(mapEl.value)
@@ -883,20 +912,26 @@ function zoomBy(delta: number) {
   view.animate({ zoom: zoom + delta, duration: 180 })
 }
 
-function fullWorldResolution(size?: number[]) {
-  const [width, height] = size ?? []
-  if (!width || !height) return undefined
-  return Math.max(
-    (WORLD_EXTENT[2]! - WORLD_EXTENT[0]!) / width,
-    (WORLD_EXTENT[3]! - WORLD_EXTENT[1]!) / height,
-  )
+function clipWorldBasemap(map: Map) {
+  const element = basemapEl.value
+  if (!element) return
+  if (basemap.value !== 'osm') {
+    element.style.clipPath = ''
+    return
+  }
+  const width = map.getSize()?.[0]
+  const west = map.getPixelFromCoordinate([WORLD_EXTENT[0]!, 0])?.[0]
+  const east = map.getPixelFromCoordinate([WORLD_EXTENT[2]!, 0])?.[0]
+  if (!width || west === undefined || east === undefined) return
+  const left = Math.max(0, west)
+  const right = Math.max(0, width - east)
+  element.style.clipPath = left || right ? `inset(0 ${right}px 0 ${left}px)` : ''
 }
 
 function resetWorldView(duration = 0) {
-  const map = mapRef.value
-  map?.getView().animate({
+  mapRef.value?.getView().animate({
     center: fromLonLat(DEFAULT_CENTER),
-    resolution: fullWorldResolution(map.getSize()) ?? DEFAULT_WORLD_RESOLUTION,
+    resolution: DEFAULT_WORLD_RESOLUTION,
     duration,
   })
 }
@@ -1092,6 +1127,10 @@ function flyToFocusedStation(focus = focusedStation.value) {
   position: relative;
   width: 100%;
   height: 520px;
+}
+
+.oscar-ol-wrap--single-world {
+  background: #fff;
 }
 
 .oscar-basemap {
