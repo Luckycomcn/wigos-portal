@@ -2,10 +2,52 @@
   <div class="oscar-map-shell">
     <p v-if="downloadError" class="map-download-error" role="alert">{{ downloadError }}</p>
     <div v-show="identifying" class="oscar-map-wait">{{ $t('map.identifying') }}</div>
-    <div class="oscar-ol-wrap" ref="wrapEl">
+    <div class="oscar-ol-wrap" :class="{ 'oscar-ol-wrap--single-world': basemap === 'osm', 'oscar-ol-wrap--drawing': drawingArea }" ref="wrapEl">
       <div ref="amapEl" class="oscar-amap" :style="{ visibility: basemap === 'amap' ? 'visible' : 'hidden' }"></div>
       <div ref="basemapEl" class="oscar-basemap" aria-hidden="true"></div>
       <div ref="mapEl" class="map oscar-ol-map"></div>
+
+      <section v-if="selectedArea" v-show="!drawingArea" class="area-results" :aria-label="areaTitle" :aria-busy="loading">
+        <header class="area-results__header">
+          <h3 aria-live="polite">{{ areaTitle }}</h3>
+          <button type="button" :aria-label="areaSortLabel" :title="areaSortLabel"
+                  @click="areaAscending = !areaAscending; setAreaPage(1)">{{ areaAscending ? '↑' : '↓' }}</button>
+        </header>
+        <p v-if="loading" class="area-results__status" role="status">{{ t('common.loading') }}</p>
+        <div v-if="mapError" class="area-results__status" role="alert">
+          {{ mapError }} <button type="button" @click="loadViewport">{{ t('common.retry') }}</button>
+        </div>
+        <p v-else-if="!loading && !areaStations.length" class="area-results__status">{{ t('search.noMatching') }}</p>
+        <ul v-else ref="areaList" class="area-results__list">
+          <li v-for="{ station, row, status } in areaPageStations" :key="station.wigosId" :data-station="station.wigosId"
+              :class="{ 'area-results__active': activeAreaStation?.wigosId === station.wigosId }"
+              @mouseenter="highlightAreaStation(station)" @mouseleave="highlightAreaStation()">
+            <div class="area-results__station">
+              <div>
+                <a :href="reportHref(station.wigosId)" target="_blank" rel="noopener noreferrer"
+                   @focus="highlightAreaStation(station)" @blur="highlightAreaStation()">{{ station.name }}</a>
+                <small v-if="station.wigosId !== station.name">{{ station.wigosId }}</small>
+              </div>
+              <button type="button" class="area-results__locate" :title="t('map.locateAreaStation')"
+                      :aria-label="t('map.locateAreaStation') + ' ' + station.name" @click="locateAreaStation(station)">
+                <i class="el-icon-map-location" aria-hidden="true"><MapLocation /></i>
+              </button>
+            </div>
+            <dl>
+              <div><dt>{{ t('search.th.type') }}</dt><dd>{{ row.type || '—' }}</dd></div>
+              <div><dt>{{ t('search.th.territory') }}</dt><dd>{{ row.country || '—' }}</dd></div>
+              <div><dt>{{ t('search.th.position') }}</dt><dd>{{ station.lat.toFixed(3) }}, {{ station.lon.toFixed(3) }}</dd></div>
+              <div><dt>{{ t('search.th.status') }}</dt><dd>{{ status || '—' }}</dd></div>
+              <div><dt>{{ t('search.th.program') }}</dt><dd>{{ row.programs.join(', ') || '—' }}</dd></div>
+            </dl>
+          </li>
+        </ul>
+        <div v-if="areaPageCount > 1" class="area-results__pagination">
+          <button type="button" :disabled="areaPage === 1" :aria-label="t('common.previousPage')" @click="setAreaPage(areaPage - 1)">‹</button>
+          <span>{{ areaPage }} / {{ areaPageCount }}</span>
+          <button type="button" :disabled="areaPage === areaPageCount" :aria-label="t('common.nextPage')" @click="setAreaPage(areaPage + 1)">›</button>
+        </div>
+      </section>
 
       <div
         v-if="hover"
@@ -63,6 +105,26 @@
         <button type="button" :title="$t('map.resetView')" class="oscar-map-tools__icon" @click="resetView">
           <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 4.5A7.5 7.5 0 1 1 4.5 12H6a6 6 0 1 0 2.1-4.5L10 10H4V4l2.2 2.2A7.47 7.47 0 0 1 12 4.5z"/></svg>
         </button>
+        <button v-if="props.areaSelection" type="button" class="oscar-map-tools__icon"
+                :aria-pressed="drawingArea" :aria-label="t('map.selectArea')" :title="t('map.selectArea')"
+                @click="setDrawingArea(!drawingArea)">
+          <Crop aria-hidden="true" />
+        </button>
+      </div>
+
+      <div v-if="!selectedArea" class="oscar-map-tools oscar-map-tools--cluster">
+        <button
+          type="button"
+          :aria-pressed="clusterEnabled"
+          :aria-label="t('map.clusterToggle')"
+          :title="t('map.clusterToggle')"
+          @click="toggleClustering"
+        >
+          <i :class="clusterEnabled ? 'el-icon-help' : 'el-icon-location-outline'" aria-hidden="true">
+            <Help v-if="clusterEnabled" />
+            <Location v-else />
+          </i>
+        </button>
       </div>
 
       <div class="oscar-map-layers">
@@ -74,7 +136,7 @@
         <span v-if="basemapStatus" role="status">{{ $t(basemapStatus) }}</span>
       </div>
 
-      <div v-if="loading || mapError || (!tilesActive && !matchedCount)" class="map-data-status" role="status" aria-live="polite">
+      <div v-if="!selectedArea && (loading || mapError || (!tilesActive && !matchedCount))" class="map-data-status" role="status" aria-live="polite">
         <span v-if="loading">{{ $t('common.loading') }}<span v-if="mapLoadTotal"> {{ mapLoaded.toLocaleString() }} / {{ mapLoadTotal.toLocaleString() }}</span></span>
         <span v-if="!tilesActive && !loading && !mapError && !matchedCount">{{ locale === 'zh' ? '无匹配站点' : 'No matching stations' }}</span>
         <span v-if="mapError" role="alert"> · {{ locale === 'zh' ? '加载失败，结果不完整：' : 'Loading failed; results incomplete: ' }}{{ mapError }} <button @click="loadViewport">{{ $t('common.retry') }}</button></span>
@@ -92,7 +154,8 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { Crop, Help, Location, MapLocation } from '@element-plus/icons-vue'
 import { filterCountry, filterType, filterPrograms, filterStatuses, focusedStation } from '../stores/quickFilter'
 import Map from 'ol/Map'
 import View from 'ol/View'
@@ -106,16 +169,17 @@ import VectorLayer from 'ol/layer/Vector'
 import VectorSource from 'ol/source/Vector'
 import VectorTileLayer from 'ol/layer/VectorTile'
 import VectorTileSource from 'ol/source/VectorTile'
+import DragBox from 'ol/interaction/DragBox'
 import MVT from 'ol/format/MVT'
 import Feature from 'ol/Feature'
 import type Geometry from 'ol/geom/Geometry'
 import GeoJSON from 'ol/format/GeoJSON'
 import Point from 'ol/geom/Point'
-import Polygon from 'ol/geom/Polygon'
+import Polygon, { fromExtent } from 'ol/geom/Polygon'
 import LineString from 'ol/geom/LineString'
-import { fromLonLat, toLonLat, transformExtent } from 'ol/proj'
+import { fromLonLat, getPointResolution, toLonLat, transformExtent } from 'ol/proj'
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style'
-import ScaleLine from 'ol/control/ScaleLine'
+import Control from 'ol/control/Control'
 import { defaults as defaultControls } from 'ol/control/defaults'
 import type { Station, StationDomain } from '../data/stations'
 import { domainColors } from '../data/stations'
@@ -128,6 +192,7 @@ import {
   WIGOS_COLLECTION_URL,
   useMapTiles,
   type FacilitySearchParams,
+  type WigosBbox,
   getFeature,
   featureClosed,
   featureEstablished,
@@ -135,6 +200,7 @@ import {
   featureStatus,
   featureToStation,
   type WigosFeature,
+  featureToRow,
 } from '../api/wigos'
 import { facilityTypeDomain, facilityTypeTitle, programTitle, findTerritoryId, programIdByTitle } from '../data/wmdrCodes'
 import 'ol/ol.css'
@@ -153,7 +219,15 @@ interface HoverInfo {
   stationId?: string
 }
 
-const props = defineProps<{ visibleStations?: Station[]; mapQuery?: FacilitySearchParams }>()
+const props = defineProps<{
+  visibleStations?: Station[]
+  mapQuery?: FacilitySearchParams
+  focusExactMatch?: boolean
+  areaSelection?: boolean
+}>()
+const emit = defineEmits<{
+  viewportCount: [query: FacilitySearchParams, count: number | undefined, failed: boolean]
+}>()
 
 const legend: { labelKey: string; domain: StationDomain; color: string }[] = [
   { labelKey: 'map.legend.air', domain: 'air', color: domainColors.air },
@@ -182,13 +256,19 @@ const router = useRouter()
 
 /** Station reports open in a new tab; hash routing resolves relative to the deployed base. */
 function reportHref(wigosId: string): string {
-  return router.resolve({ name: 'stationReportDetails', params: { wigosId } }).href
+  return router.resolve({
+    name: 'stationReportDetails',
+    params: { wigosId },
+    query: basemap.value === 'osm' ? {} : { basemap: basemap.value },
+  }).href
 }
 const dlOpen = ref(false)
 import { selectedBasemap, rememberBasemap, type Basemap } from '../utils/basemap'
 const DEFAULT_CENTER = [0, 0]
 const WORLD_EXTENT = transformExtent([-180, -85, 180, 85], 'EPSG:4326', 'EPSG:3857')
 const DEFAULT_ZOOM = 2.2
+// At the equator, 160 CSS pixels represent 5,000 km at this resolution.
+const DEFAULT_WORLD_RESOLUTION = 5_000_000 / 160
 const CHINA_CENTER: [number, number] = [104, 35]
 const CHINA_ZOOM = 4
 // Start from 'osm' as the applied baseline; onMounted applies selectedBasemap
@@ -223,6 +303,18 @@ function syncAmap() {
 }
 const tilesActive = ref(false)
 const overviewActive = ref(false)
+const drawingArea = ref(false)
+const selectedArea = shallowRef<WigosBbox>()
+const clusterPreference = ref(false)
+const clusterEnabled = computed(() => clusterPreference.value && !selectedArea.value)
+const clusterSource = new VectorSource({ wrapX: false })
+const clusterLayer = new VectorLayer({
+  source: clusterSource,
+  visible: false,
+  style: feature => tileStyles[feature.get('domain') as StationDomain],
+})
+let tileClusterRevision = 0
+let clusterKey = ''
 let overviewUnavailable = overview.source !== WIGOS_COLLECTION_URL
 const pendingTiles = new Set<unknown>()
 const realtimeTileSource = new VectorTileSource({
@@ -244,7 +336,7 @@ const stationTiles = new VectorTileLayer({
   visible: false,
   declutter: false,
   style: feature => {
-    if (feature.get('layer') !== 'hits') return undefined
+    if (clusterEnabled.value || feature.get('layer') !== 'hits') return undefined
     return tileStyles[facilityTypeDomain(feature.get('properties.facilityType.id') ?? '')]
   },
 })
@@ -254,6 +346,7 @@ function selectStationSource() {
   const next = local ? overviewTileSource : realtimeTileSource
   if (tileSource === next) return
   pendingTiles.clear()
+  tileClusterRevision++
   tileSource = next
   stationTiles.setSource(next)
   hoverRequestVersion++
@@ -266,7 +359,124 @@ function selectStationSource() {
 }
 function tileFinished(tile: unknown) {
   pendingTiles.delete(tile)
+  tileClusterRevision++
   if (tilesActive.value) loading.value = pendingTiles.size > 0
+}
+
+function createStationCluster(geometry: Point, features: Feature[]) {
+  const domainCounts = new globalThis.Map<StationDomain, number>()
+  let count = 0
+  for (const feature of features) {
+    const domain: StationDomain = feature.get('domain') ?? facilityTypeDomain(feature.get('properties.facilityType.id') ?? '')
+    const stationCount = Number(feature.get('count')) || 1
+    count += stationCount
+    domainCounts.set(domain, (domainCounts.get(domain) ?? 0) + stationCount)
+  }
+  let domain: StationDomain = 'land-ocean'
+  let largestCount = 0
+  for (const [candidate, domainCount] of domainCounts) {
+    if (domainCount <= largestCount) continue
+    domain = candidate
+    largestCount = domainCount
+  }
+  return new Feature({ geometry, features, count, domain })
+}
+
+function clusterGroupSize(resolution: number) {
+  const zoomSteps = DEFAULT_WORLD_RESOLUTION / resolution
+  if (zoomSteps < 2 - 1e-9) return 20
+  if (zoomSteps < 4 - 1e-9) return 10
+  if (zoomSteps < 8 - 1e-9) return 5
+  return 1
+}
+
+function spatialOrder(x: number, y: number) {
+  // Interleave coordinate bits to keep nearby stations close in the sort order.
+  const [minX, minY, maxX, maxY] = WORLD_EXTENT
+  const column = Math.floor(65535 * (x - minX) / (maxX - minX))
+  const row = Math.floor(65535 * (y - minY) / (maxY - minY))
+  let order = 0
+  for (let bit = 0; bit < 16; bit++) {
+    order |= ((column >>> bit) & 1) << (2 * bit)
+    order |= ((row >>> bit) & 1) << (2 * bit + 1)
+  }
+  return order >>> 0
+}
+
+function groupStationPoints(points: Feature[], groupSize: number) {
+  const ordered = points.flatMap(feature => {
+    const geometry = feature.getGeometry()
+    if (!(geometry instanceof Point)) return []
+    const [x, y] = geometry.getCoordinates() as [number, number]
+    return [{ feature, x, y, order: groupSize > 1 ? spatialOrder(x, y) : 0 }]
+  })
+  if (groupSize > 1) ordered.sort((a, b) => a.order - b.order)
+  const groups: Feature[] = []
+  for (let start = 0; start < ordered.length; start += groupSize) {
+    const group = ordered.slice(start, start + groupSize)
+    let x = 0
+    let y = 0
+    for (const point of group) {
+      x += point.x
+      y += point.y
+    }
+    groups.push(createStationCluster(new Point([x / group.length, y / group.length]), group.map(point => point.feature)))
+  }
+  return groups
+}
+
+function tilePointsInExtent(extent: number[]) {
+  const points: Feature[] = []
+  const seen = new Set<unknown>()
+  for (const feature of stationTiles.getFeaturesInExtent(extent)) {
+    if (feature.get('layer') !== 'hits') continue
+    const geometry = feature.getGeometry()
+    if (geometry?.getType() !== 'Point') continue
+    const id = feature.get('id') ?? feature.get('_id') ?? feature.getId()
+    if (id != null && seen.has(id)) continue
+    if (id != null) seen.add(id)
+    points.push(new Feature({ ...feature.getProperties(), geometry: new Point(geometry.getFlatCoordinates()) }))
+  }
+  return points
+}
+
+function updateStationClusters(map: Map) {
+  const size = map.getSize()
+  const view = map.getView()
+  const resolution = view.getResolution()
+  if (!clusterEnabled.value || !size || !resolution || view.getAnimating() || view.getInteracting()) return
+  const groupSize = clusterGroupSize(resolution)
+  const extent = view.calculateExtent(size)
+  const source = vectorRef.value?.getSource()
+  const key = tilesActive.value
+    ? ['tiles', tileClusterRevision, groupSize, ...extent].join(',')
+    : ['stations', source?.getRevision(), groupSize].join(',')
+  if (key === clusterKey) return
+  clusterKey = key
+  const points = tilesActive.value ? tilePointsInExtent(extent) : source?.getFeatures() ?? []
+  const groups = groupStationPoints(points, groupSize)
+  clusterSource.clear(true)
+  clusterSource.addFeatures(groups)
+}
+
+function syncClusterLayers() {
+  clusterKey = ''
+  clusterSource.clear(true)
+  clusterLayer.setVisible(clusterEnabled.value)
+  vectorRef.value?.setVisible(!clusterEnabled.value)
+}
+
+function toggleClustering() {
+  clusterPreference.value = !clusterPreference.value
+  hoverRequestVersion++
+  hover.value = null
+  hoverKey = ''
+  selected.value = null
+  popupPinned.value = false
+  isOverPopup.value = false
+  dlOpen.value = false
+  syncClusterLayers()
+  stationTiles.changed()
 }
 for (const source of [overviewTileSource, realtimeTileSource]) {
   source.on('tileloadstart', event => {
@@ -292,7 +502,6 @@ const mapLoadTotal = ref(0)
 const filteredSnapshotDate = ref('')
 const filteredUnmapped = ref(0)
 let viewportController: AbortController | undefined
-let lastMove = 0
 let pendingTimer = 0
 let hideTimer = 0
 let hoverKey = ''
@@ -301,6 +510,109 @@ let viewportTimer = 0
 let loadSeq = 0
 
 const liveFeatures = shallowRef<WigosFeature[]>([])
+const areaPageSize = 100
+const areaPage = ref(1)
+const areaList = ref<HTMLUListElement>()
+const areaAscending = ref(true)
+const areaSortLabel = computed(() => t('search.th.stationName') + (areaAscending.value ? ' ↑' : ' ↓'))
+const activeAreaStation = shallowRef<Station>()
+const areaStations = computed(() => selectedArea.value ? liveFeatures.value.flatMap(feature => {
+  const station = featureToStation(feature)
+  if (!station) return []
+  const row = featureToRow(feature, true)
+  const status = feature.time?.interval?.some(value => value && value !== '..') ? row.status : ''
+  return [{ station, row, status }]
+}).sort((a, b) => (areaAscending.value ? 1 : -1) *
+  (a.station.name.localeCompare(b.station.name, locale.value) || a.station.wigosId.localeCompare(b.station.wigosId))) : [])
+const areaTitle = computed(() => t('map.areaStations', { count: areaStations.value.length.toLocaleString(locale.value) }))
+const areaPageCount = computed(() => Math.max(1, Math.ceil(areaStations.value.length / areaPageSize)))
+const areaPageStations = computed(() => areaStations.value.slice((areaPage.value - 1) * areaPageSize, areaPage.value * areaPageSize))
+const areaOutline = new Feature<Polygon>()
+const areaHighlight = new Feature<Point>()
+const areaOutlineLayer = new VectorLayer({
+  source: new VectorSource({ features: [areaOutline], wrapX: false }),
+  style: new Style({ stroke: new Stroke({ color: '#005a9f', width: 2 }), fill: new Fill({ color: 'rgba(0, 90, 159, 0.07)' }) }),
+})
+const areaHighlightLayer = new VectorLayer({
+  source: new VectorSource({ features: [areaHighlight], wrapX: false }),
+  style: dotStyle('#005a9f', 7),
+})
+const areaBox = new DragBox({ className: 'oscar-area-drag-box' })
+areaBox.setActive(false)
+
+function highlightAreaStation(station = activeAreaStation.value) {
+  areaHighlight.setGeometry(station ? new Point(mapCoordinate(station.lon, station.lat)) : undefined)
+}
+
+function locateAreaStation(station: Station) {
+  const view = mapRef.value?.getView()
+  if (!view) return
+  activeAreaStation.value = station
+  highlightAreaStation(station)
+  view.cancelAnimations()
+  view.animate({
+    center: mapCoordinate(station.lon, station.lat),
+    zoom: Math.max(view.getZoom() ?? 0, 8),
+    duration: 350,
+  })
+}
+
+function setAreaPage(page: number) {
+  areaPage.value = page
+  if (areaList.value) areaList.value.scrollTop = 0
+  highlightAreaStation()
+}
+
+async function revealAreaStation(id: string) {
+  const index = areaStations.value.findIndex(({ station }) => station.wigosId === id)
+  const station = areaStations.value[index]?.station
+  if (!station) return
+  activeAreaStation.value = station
+  setAreaPage(Math.floor(index / areaPageSize) + 1)
+  await nextTick()
+  const list = areaList.value
+  const row = list?.querySelector<HTMLElement>('[data-station="' + CSS.escape(id) + '"]')
+  if (list && row) {
+    list.scrollTop += row.getBoundingClientRect().top - list.getBoundingClientRect().top
+  }
+}
+
+function drawAreaOutline() {
+  const area = selectedArea.value
+  areaOutline.setGeometry(area ? fromExtent([...mapCoordinate(area[0], area[1]), ...mapCoordinate(area[2], area[3])]) : undefined)
+}
+
+function setDrawingArea(active: boolean) {
+  drawingArea.value = active
+  areaBox.setActive(active)
+  hoverRequestVersion++
+  hover.value = null
+  hoverKey = ''
+  popupPinned.value = false
+  isOverPopup.value = false
+  const target = mapRef.value?.getTargetElement()
+  if (target) target.style.cursor = active ? 'crosshair' : ''
+}
+
+function setSelectedArea(area?: WigosBbox) {
+  setDrawingArea(false)
+  selectedArea.value = area
+  activeAreaStation.value = undefined
+  setAreaPage(1)
+  drawAreaOutline()
+  syncClusterLayers()
+  stationTiles.changed()
+  window.clearTimeout(viewportTimer)
+  void loadViewport()
+}
+
+areaBox.on('boxend', () => {
+  const [west, south, east, north] = geographicExtent(areaBox.getGeometry().getExtent())
+  const bbox: WigosBbox = [Math.max(-180, west), Math.max(-85, south), Math.min(180, east), Math.min(85, north)]
+  if (bbox[0] < bbox[2] && bbox[1] < bbox[3]) setSelectedArea(bbox)
+})
+
+defineExpose({ selectedArea, drawingArea, setDrawingArea, setSelectedArea })
 const detailCache: Record<string, WigosFeature> = {}
 
 const LAND_FILL = '#f2f5ef'
@@ -383,63 +695,17 @@ function dotStyle(color: string, radius = 2) {
   })
 }
 
-function clusterFeaturesByDistance(features: Feature[], distance: number): Feature[] {
-  if (!(distance > 0)) return features
-  type Group = { seed: Feature; x: number; y: number; count: number }
-  const buckets = new globalThis.Map<string, Group[]>()
-  const groups: Group[] = []
-  const identity = (feature: Feature) => String(feature.get('wigosId') ?? feature.get('station')?.wigosId ?? '')
-  // Stable seeds keep results independent of page arrival order. A seed is an
-  // actual station, never a cell centre or averaged coordinate.
-  const ordered = [...features].sort((a, b) => identity(a).localeCompare(identity(b)))
-  const radiusSquared = distance * distance
-  for (const feature of ordered) {
-    const [x, y] = (feature.getGeometry() as Point).getCoordinates() as [number, number]
-    const col = Math.floor(x / distance), row = Math.floor(y / distance)
-    const domain = String(feature.get('domain'))
-    let nearest: Group | undefined
-    let best = radiusSquared
-    // Buckets only accelerate neighbour lookup. The circular distance test
-    // spans bucket boundaries and determines membership, not the grid cell.
-    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
-      for (const group of buckets.get(`${col + dx},${row + dy},${domain}`) ?? []) {
-        const squared = (x - group.x) ** 2 + (y - group.y) ** 2
-        if (squared <= radiusSquared && (!nearest || squared < best)) { nearest = group; best = squared }
-      }
-    }
-    if (nearest) nearest.count++
-    else {
-      const group = { seed: feature, x, y, count: 1 }
-      const key = `${col},${row},${domain}`
-      const bucket = buckets.get(key) ?? []
-      bucket.push(group); buckets.set(key, bucket); groups.push(group)
-    }
-  }
-  return groups.map(({ seed, count }) => {
-    if (count === 1) return seed
-    const cluster = new Feature({ geometry: seed.getGeometry()!.clone(), cluster: true, count,
-      domain: seed.get('domain'), representativeId: identity(seed) })
-    cluster.setStyle(seed.getStyle())
-    return cluster
-  })
-}
-
 function buildCloud(): Feature[] {
   const stations = props.visibleStations ?? liveFeatures.value.flatMap(f => {
     const station = featureToStation(f)
     return station ? [station] : []
   })
-  const features = stations.map(s => {
+  return stations.map(s => {
     const feature = new Feature({ geometry: new Point(mapCoordinate(s.lon, s.lat)), station: s, domain: s.domain,
       wigosId: props.visibleStations ? undefined : s.wigosId })
     feature.setStyle(tileStyles[s.domain])
     return feature
   })
-  const view = mapRef.value?.getView()
-  const zoom = view?.getZoom() ?? DEFAULT_ZOOM
-  if (zoom >= 6) return features
-  const distance = (view?.getResolution() ?? 40000) * (zoom < 4 ? 16 : 8)
-  return clusterFeaturesByDistance(features, distance)
 }
 
 function stationToHover(s: Station): HoverInfo {
@@ -480,24 +746,50 @@ function hoverFromFeature(feature: WigosFeature): HoverInfo {
   }
 }
 
-function onPointerMove(evt: { pixel: number[]; coordinate: number[]; originalEvent: PointerEvent }) {
+function stationAtPixel(map: Map, pixel: number[]) {
+  if (clusterEnabled.value) {
+    return map.forEachFeatureAtPixel(pixel, feature => {
+      const members = feature.get('features') as Feature[]
+      return feature.get('count') > 1 ? feature : members[0]
+    }, { hitTolerance: 6, layerFilter: layer => layer === clusterLayer })
+  }
+  if (tilesActive.value) {
+    const coordinate = map.getCoordinateFromPixel(pixel)
+    const resolution = map.getView().getResolution()
+    if (!coordinate || !resolution) return undefined
+    const [x, y] = coordinate as [number, number]
+    const radius = 8 * resolution
+    const candidates = stationTiles.getFeaturesInExtent([x - radius, y - radius, x + radius, y + radius])
+    let nearest: (typeof candidates)[number] | undefined
+    let bestDistance = radius ** 2
+    for (const feature of candidates) {
+      if (feature.get('layer') !== 'hits') continue
+      const [pointX, pointY] = feature.getGeometry()?.getFlatCoordinates() ?? []
+      if (pointX === undefined || pointY === undefined) continue
+      const distance = (pointX - x) ** 2 + (pointY - y) ** 2
+      if (distance > bestDistance || (nearest && distance === bestDistance)) continue
+      nearest = feature
+      bestDistance = distance
+    }
+    return nearest
+  }
+  return map.forEachFeatureAtPixel(pixel, (feature) => feature, {
+    hitTolerance: 6,
+    layerFilter: layer => layer === vectorRef.value,
+  })
+}
+
+function onPointerMove(evt: { pixel: number[] }) {
+  if (drawingArea.value || selectedArea.value) return
   const map = mapRef.value
   if (!map) return
   if (isOverPopup.value) return
-  const now = Date.now()
-  if (now - lastMove < 120) return
-  lastMove = now
   window.clearTimeout(pendingTimer)
   const [px, py] = evt.pixel
   const pointerVersion = ++hoverRequestVersion
-  pendingTimer = window.setTimeout(async () => {
-    if (isOverPopup.value) return
-    const tileHits = tilesActive.value ? await stationTiles.getFeatures(evt.pixel) : []
+  pendingTimer = window.setTimeout(() => {
     if (pointerVersion !== hoverRequestVersion || isOverPopup.value || mapRef.value !== map) return
-    const hit = tileHits[0] ?? map.forEachFeatureAtPixel(evt.pixel, (f) => f, {
-      hitTolerance: 6,
-      layerFilter: layer => layer === stationTiles || layer === vectorRef.value,
-    }) as Feature | undefined
+    const hit = stationAtPixel(map, evt.pixel)
     const station = (hit?.get('station') as Station | undefined) ?? null
     const wigosId = (hit?.get('wigosId') ?? hit?.get('id') ?? hit?.get('_id')) as string | undefined
     const key = wigosId || (station ? station.wigosId : '')
@@ -611,11 +903,7 @@ async function runDownload(format: 'xml' | 'json') {
 
 const downloadXml = () => runDownload('xml')
 const downloadWmdrV2 = () => runDownload('json')
-function currentBbox(): [number, number, number, number] | null {
-  const map = mapRef.value
-  if (!map) return null
-  const view = map.getView()
-  const ext = view.calculateExtent(map.getSize())
+function geographicExtent(ext: number[]): WigosBbox {
   let [minLon, minLat, maxLon, maxLat] = transformExtent(ext, 'EPSG:3857', 'EPSG:4326')
   if (basemap.value === 'amap') {
     const [gcjWest, gcjSouth] = toGcj02(minLon, minLat)
@@ -625,6 +913,14 @@ function currentBbox(): [number, number, number, number] | null {
     maxLon += maxLon - gcjEast
     maxLat += maxLat - gcjNorth
   }
+  return [minLon, minLat, maxLon, maxLat]
+}
+
+function currentBbox(): WigosBbox | null {
+  const map = mapRef.value
+  const size = map?.getSize()
+  if (!map || !size?.[0] || !size[1] || !mapEl.value?.clientWidth || !mapEl.value.clientHeight) return null
+  const [minLon, minLat, maxLon, maxLat] = geographicExtent(map.getView().calculateExtent(size))
   const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
   // A wrapped viewport must include both sides of the date line.
   // Query all longitudes when crossing it; never silently clip away one side.
@@ -645,6 +941,9 @@ function selectedProgramIds(): string[] {
     .filter(Boolean)
 }
 
+let focusedExactQuery: FacilitySearchParams | undefined
+let viewportNeedsSize = false
+
 async function loadViewport() {
   if (props.visibleStations) return
   viewportController?.abort()
@@ -659,10 +958,13 @@ async function loadViewport() {
   filteredUnmapped.value = 0
   mapLoaded.value = 0
   mapLoadTotal.value = 0
-  tilesActive.value = useMapTiles(query)
+  const area = selectedArea.value
+  tilesActive.value = !area && useMapTiles(query)
   selectStationSource()
   stationTiles.setVisible(tilesActive.value)
+  if (wasTiles !== tilesActive.value) syncClusterLayers()
   if (tilesActive.value) {
+    viewportNeedsSize = false
     loadSeq++
     liveFeatures.value = []
     vectorRef.value?.getSource()?.clear()
@@ -674,18 +976,29 @@ async function loadViewport() {
     if (retry) tileSource.refresh()
     return
   }
-  const bbox = currentBbox()
+  const bbox = area ?? currentBbox()
+  viewportNeedsSize = !bbox
   if (!bbox) return
+  // An exact station lookup can start outside the visible map.
+  const shouldFocus = !area && props.focusExactMatch && query.q?.startsWith('0-') && focusedExactQuery !== query
+  emit('viewportCount', query, undefined, false)
   const controller = new AbortController()
   viewportController = controller
   const seq = ++loadSeq
   loading.value = true
   mapError.value = ''
   matchedCount.value = 0
+  if (area) {
+    activeAreaStation.value = undefined
+    setAreaPage(1)
+  }
   liveFeatures.value = []
   vectorRef.value?.getSource()?.clear()
-  hover.value = null
-  selected.value = null
+  if (focusedExactQuery !== query) {
+    hover.value = null
+    selected.value = null
+    popupPinned.value = false
+  }
   const received = new globalThis.Map<string, WigosFeature>()
   let paintTimer = 0
   const paint = () => {
@@ -699,26 +1012,66 @@ async function loadViewport() {
     source?.addFeatures(buildCloud())
   }
   try {
-    const result = await loadFilteredMap({ ...query, bbox, signal: controller.signal }, (delta, loaded, total) => {
+    const result = await loadFilteredMap({ ...query, bbox: shouldFocus ? undefined : bbox, signal: controller.signal }, (delta, loaded, total) => {
       if (seq !== loadSeq || controller.signal.aborted) return
       for (const feature of delta) received.set(feature.id, feature)
       mapLoaded.value = loaded
       mapLoadTotal.value = total
       if (!paintTimer) paintTimer = window.setTimeout(paint, 150)
-    })
+    }, { areaRows: Boolean(area) })
     if (seq === loadSeq && !controller.signal.aborted) {
       received.clear()
       for (const feature of result.features) received.set(feature.id, feature)
       paint()
       filteredSnapshotDate.value = result.snapshotDate ?? ''
       filteredUnmapped.value = result.unmapped
+      if (shouldFocus) {
+        focusedExactQuery = query
+        const feature = result.features[0]
+        if (feature) flyToFocusedStation(featureToStation(feature))
+      }
+      emit('viewportCount', query, matchedCount.value, false)
     }
   } catch (cause) {
-    if (seq === loadSeq && !controller.signal.aborted) mapError.value = cause instanceof Error ? cause.message : String(cause)
+    if (seq === loadSeq && !controller.signal.aborted) {
+      mapError.value = cause instanceof Error ? cause.message : String(cause)
+      emit('viewportCount', query, undefined, true)
+    }
   } finally {
     window.clearTimeout(paintTimer)
     if (seq === loadSeq) loading.value = false
   }
+}
+
+function createMetricScaleLine() {
+  const element = document.createElement('div')
+  element.className = 'ol-scale-line ol-unselectable'
+  const line = document.createElement('div')
+  line.className = 'ol-scale-line-inner'
+  element.append(line)
+  return new Control({
+    element,
+    render({ frameState }) {
+      if (!frameState) {
+        element.hidden = true
+        return
+      }
+      const { projection, resolution, center } = frameState.viewState
+      const metersPerPixel = getPointResolution(projection, resolution, center, 'm')
+      const minimumDistance = 120 * metersPerPixel
+      if (!(minimumDistance > 0) || !Number.isFinite(minimumDistance)) {
+        element.hidden = true
+        return
+      }
+      const magnitude = 10 ** Math.floor(Math.log10(minimumDistance))
+      const step = [1, 2, 3, 5, 10].find(value => value * magnitude >= minimumDistance) ?? 10
+      const meters = step * magnitude
+      const label = meters >= 1000 ? `${meters / 1000} km` : `${meters} m`
+      if (line.textContent !== label) line.textContent = label
+      line.style.width = `${Math.round(meters / metersPerPixel)}px`
+      element.hidden = false
+    },
+  })
 }
 
 onMounted(() => {
@@ -732,14 +1085,15 @@ onMounted(() => {
     target: mapEl.value,
     pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
     controls: defaultControls({ zoom: false, rotate: false }).extend([
-      new ScaleLine({ units: 'metric', minWidth: 100 }),
+      createMetricScaleLine(),
     ]),
-    layers: [stationTiles, vector],
+    layers: [areaOutlineLayer, stationTiles, vector, clusterLayer, areaHighlightLayer],
     view: new View({
       center: fromLonLat(DEFAULT_CENTER),
-      zoom: DEFAULT_ZOOM,
+      resolution: DEFAULT_WORLD_RESOLUTION,
       minZoom: -2,
       maxZoom: 18,
+      enableRotation: !props.areaSelection,
       extent: WORLD_EXTENT,
       constrainOnlyCenter: true,
       constrainResolution: false,
@@ -757,31 +1111,56 @@ onMounted(() => {
     layers: [landLayer, gridLayer, ...tiandituLayers],
     view: map.getView(),
   })
-  map.on('singleclick', async (evt) => {
-    if (tilesActive.value) {
-      const source = tileSource
-      const hits = await stationTiles.getFeatures(evt.pixel)
-      if (mapRef.value !== map || !tilesActive.value || source !== tileSource) return
-      if (Number(hits[0]?.get('count') ?? 1) > 1) {
-        map.getView().animate({ center: evt.coordinate, zoom: Math.min(overview.maxZoom + 1, (map.getView().getZoom() ?? 2) + 2), duration: 250 })
-        return
+  if (props.areaSelection) map.addInteraction(areaBox)
+  map.on('singleclick', (evt) => {
+    if (drawingArea.value) return
+    const hit = stationAtPixel(map, evt.pixel)
+    if (selectedArea.value) {
+      const station = hit?.get('station') as Station | undefined
+      if (station) {
+        hoverRequestVersion++
+        hover.value = null
+        hoverKey = ''
+        popupPinned.value = false
+        void revealAreaStation(station.wigosId)
       }
+      return
+    }
+    if (Number(hit?.get('count') ?? 1) > 1) {
+      const view = map.getView()
+      const maxZoom = clusterEnabled.value ? view.getMaxZoom() : overview.maxZoom + 1
+      const geometry = hit?.getGeometry()
+      const center = geometry instanceof Point ? geometry.getCoordinates() : evt.coordinate
+      popupPinned.value = false
+      hover.value = null
+      const zoomStep = clusterEnabled.value ? 1 : 2
+      view.animate({ center, zoom: Math.min(maxZoom, (view.getZoom() ?? 2) + zoomStep), duration: 250 })
+      return
+    }
+    if (tilesActive.value) {
+      if (hit) onPointerMove(evt)
+      return
     }
     identifying.value = true
     window.setTimeout(() => {
       identifying.value = false
     }, 250)
-    const hit = map.forEachFeatureAtPixel(evt.pixel, (feat) => feat)
-    if (hit?.get('cluster')) {
-      map.getView().animate({ center: (hit.getGeometry() as Point).getCoordinates(), zoom: (map.getView().getZoom() ?? 2) + 2, duration: 250 })
-      return
-    }
     selected.value = (hit?.get('station') as Station | undefined) ?? null
   })
-  map.on('pointermove', (e) => onPointerMove(e as unknown as { pixel: number[]; coordinate: number[]; originalEvent: PointerEvent }))
-  map.on('postrender', syncAmap)
-  map.on('movestart', () => { viewportController?.abort(); loadSeq++; if (!tilesActive.value) loading.value = false })
+  map.on('pointermove', onPointerMove)
+  map.on('postrender', () => {
+    syncAmap()
+    clipWorldBasemap(map)
+    updateStationClusters(map)
+  })
+  map.on('movestart', () => {
+    if (selectedArea.value) return
+    viewportController?.abort()
+    loadSeq++
+    if (!tilesActive.value) loading.value = false
+  })
   map.on('moveend', () => {
+    if (selectedArea.value) return
     if (!tilesActive.value) {
       const source = vectorRef.value?.getSource()
       source?.clear()
@@ -793,27 +1172,22 @@ onMounted(() => {
   ;(map.getTargetElement() as HTMLElement | null)?.addEventListener('pointerleave', () => {
     window.clearTimeout(hideTimer)
     hideTimer = window.setTimeout(() => {
-      if (!isOverPopup.value) {
+      if (!isOverPopup.value && !popupPinned.value) {
         hover.value = null
         hoverKey = ''
       }
     }, 500)
   })
   mapRef.value = map
-  fitWorld()
   map.getView().on('change:resolution', () => { if (tilesActive.value) selectStationSource() })
   void loadWorldLand()
   if (!props.visibleStations) {
     void loadViewport()
   }
   resizeObserver.value = new ResizeObserver(() => {
-    const view = map.getView()
-    const previousSize = map.getSize()
-    const previousWorldZoom = previousSize ? view.getZoomForResolution((WORLD_EXTENT[2]! - WORLD_EXTENT[0]!) / previousSize[0]!) : undefined
-    const showingWorld = basemap.value === 'osm' && previousWorldZoom != null && Math.abs((view.getZoom() ?? 0) - previousWorldZoom) < 0.05
     map.updateSize()
     basemapRef.value?.updateSize()
-    if (showingWorld) fitWorld()
+    if (viewportNeedsSize && currentBbox()) void loadViewport()
   })
   resizeObserver.value.observe(mapEl.value)
   void selectBasemap({ target: { value: selectedBasemap.value } } as unknown as Event)
@@ -881,20 +1255,34 @@ function zoomBy(delta: number) {
   view.animate({ zoom: zoom + delta, duration: 180 })
 }
 
-function fitWorld(duration = 0) {
-  const map = mapRef.value
-  const size = map?.getSize()
-  if (!map || !size?.[0]) return
-  const view = map.getView()
-  // Fill wide containers with one world; polar latitudes may fall outside the viewport.
-  const resolution = (WORLD_EXTENT[2]! - WORLD_EXTENT[0]!) / size[0]
-  view.animate({ center: fromLonLat(DEFAULT_CENTER), resolution, duration })
+function clipWorldBasemap(map: Map) {
+  const element = basemapEl.value
+  if (!element) return
+  if (basemap.value !== 'osm') {
+    element.style.clipPath = ''
+    return
+  }
+  const width = map.getSize()?.[0]
+  const west = map.getPixelFromCoordinate([WORLD_EXTENT[0]!, 0])?.[0]
+  const east = map.getPixelFromCoordinate([WORLD_EXTENT[2]!, 0])?.[0]
+  if (!width || west === undefined || east === undefined) return
+  const left = Math.max(0, west)
+  const right = Math.max(0, width - east)
+  element.style.clipPath = left || right ? `inset(0 ${right}px 0 ${left}px)` : ''
+}
+
+function resetWorldView(duration = 0) {
+  mapRef.value?.getView().animate({
+    center: fromLonLat(DEFAULT_CENTER),
+    resolution: DEFAULT_WORLD_RESOLUTION,
+    duration,
+  })
 }
 
 function resetView() {
   const world = basemap.value === 'osm'
   if (world) {
-    fitWorld(250)
+    resetWorldView(250)
     return
   }
   mapRef.value?.getView().animate({
@@ -1017,6 +1405,8 @@ async function selectBasemap(event: Event) {
   const isWorld = next === 'osm'
   basemapStatus.value = ''
   basemap.value = next
+  drawAreaOutline()
+  highlightAreaStation()
   rememberBasemap(next)
   for (const [kind, layer] of Object.entries(worldLayers) as [WorldStyleKey, LayerGroup][]) {
     layer.setVisible(kind === next)
@@ -1038,28 +1428,31 @@ async function selectBasemap(event: Event) {
   view?.cancelAnimations()
   view?.setMinZoom(next === 'amap' ? 2 : next === 'tianditu' ? 1 : -2)
   view?.setCenter(isWorld ? fromLonLat(DEFAULT_CENTER) : mapCoordinate(CHINA_CENTER[0], CHINA_CENTER[1]))
-  view?.setZoom(isWorld ? DEFAULT_ZOOM : CHINA_ZOOM)
-  if (isWorld) fitWorld()
+  if (isWorld) resetWorldView()
+  else view?.setZoom(CHINA_ZOOM)
   syncAmap()
 }
 
-function flyToFocusedStation() {
+function flyToFocusedStation(focus = focusedStation.value) {
   const map = mapRef.value
-  const focus = focusedStation.value
   if (!map || !focus || props.visibleStations) return
+  window.clearTimeout(hideTimer)
+  window.clearTimeout(pendingTimer)
+  hoverRequestVersion++
   selected.value = focus
   hover.value = stationToHover(focus)
   hoverKey = focus.wigosId
   popupPinned.value = true
   const view = map.getView()
-  view.animate({ center: mapCoordinate(focus.lon, focus.lat), zoom: Math.max(view.getZoom() ?? 2.2, 6), duration: 600 }, () => {
+  view.animate({ center: mapCoordinate(focus.lon, focus.lat), zoom: Math.max(view.getZoom() ?? 2.2, 6), duration: 600 }, (completed) => {
+    if (!completed || selected.value?.wigosId !== focus.wigosId) return
     const px = map.getPixelFromCoordinate(mapCoordinate(focus.lon, focus.lat))
     if (px) popupPos.value = clampPopup(px[0] + 14, px[1] + 14)
   })
 }
 </script>
 <style scoped lang="scss">
-.map-data-status { position: absolute; bottom: 30px; left: 12px; right: 12px; z-index: 5; padding: 6px 10px; background: #fffffff0; border-radius: 5px; font-size: 12px; overflow-wrap: anywhere; }
+.map-data-status { position: absolute; bottom: 30px; left: 12px; right: 56px; z-index: 5; padding: 6px 10px; background: #fffffff0; border-radius: 5px; font-size: 12px; overflow-wrap: anywhere; }
 .overview-note { margin: 4px 16px; font-size: 11px; color: #586e83; }
 .oscar-map-shell {
   position: relative;
@@ -1079,6 +1472,10 @@ function flyToFocusedStation() {
   position: relative;
   width: 100%;
   height: 520px;
+}
+
+.oscar-ol-wrap--single-world {
+  background: #fff;
 }
 
 .oscar-basemap {
@@ -1274,6 +1671,78 @@ function flyToFocusedStation() {
 .oscar-map-tools__icon svg {
   width: 16px;
   height: 16px;
+}
+
+.oscar-map-tools--cluster {
+  top: auto;
+  bottom: 14px;
+}
+
+.oscar-ol-wrap--drawing :deep(.oscar-ol-map) {
+  cursor: crosshair;
+}
+
+.oscar-ol-wrap :deep(.oscar-area-drag-box) {
+  border: 2px dashed #005a9f;
+  background: rgba(0, 90, 159, 0.12);
+}
+
+.area-results {
+  position: absolute;
+  z-index: 5;
+  top: 64px;
+  left: 14px;
+  bottom: 42px;
+  width: min(320px, 44%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid #dce6ef;
+  border-radius: 8px;
+  box-shadow: 0 3px 12px rgba(27, 60, 89, 0.16);
+  color: #253b50;
+}
+
+.area-results__header { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 8px 6px 12px; border-bottom: 1px solid #dce6ef; }
+.area-results h3 { margin: 0; font-size: 14px; }
+.area-results__status { margin: 0; padding: 8px 12px; font-size: 12px; overflow-wrap: anywhere; }
+.area-results__list { flex: 1; min-height: 0; margin: 0; padding: 0; list-style: none; overflow: auto; overscroll-behavior: contain; }
+.area-results__list li { padding: 9px 12px; border-bottom: 1px solid #e9eff5; overflow-wrap: anywhere; }
+.area-results__list li:hover, .area-results__list li:focus-within, .area-results__active { background: #e6f2ff; }
+.area-results__station { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
+.area-results__header button, .area-results__locate { flex: 0 0 auto; display: grid; place-items: center; width: 27px; height: 27px; padding: 0; border: 1px solid #dce6ef; border-radius: 4px; background: #fff; color: #005a9f; cursor: pointer; }
+.area-results__header button:hover, .area-results__locate:hover { border-color: #005a9f; }
+.area-results__locate i { display: flex; }
+.area-results__locate svg { width: 17px; height: 17px; }
+.area-results__list dl { display: grid; gap: 3px; margin: 6px 0 0; font-size: 12px; }
+.area-results__list dl div { display: flex; align-items: baseline; gap: 5px; }
+.area-results__list dt { flex: 0 0 auto; font-weight: 600; }
+.area-results__list dd { min-width: 0; margin: 0; }
+.area-results__list a { color: #005a9f; font-size: 13px; font-weight: 600; }
+.area-results__list small { display: block; color: #526b82; }
+.area-results__pagination { display: flex; justify-content: space-between; align-items: center; padding: 4px 10px; border-top: 1px solid #dce6ef; font-size: 12px; }
+.area-results__pagination button { min-width: 28px; border: 1px solid #dce6ef; border-radius: 4px; background: #fff; color: #005a9f; }
+.area-results__pagination button:disabled { opacity: 0.45; }
+
+.oscar-map-tools--cluster button {
+  display: grid;
+  place-items: center;
+}
+
+.oscar-map-tools button[aria-pressed='true'] {
+  background: var(--oscar-theme);
+  border-color: var(--oscar-theme);
+  color: #fff;
+}
+
+.oscar-map-tools--cluster i {
+  display: flex;
+}
+
+.oscar-map-tools--cluster svg {
+  width: 18px;
+  height: 18px;
 }
 
 .oscar-amap {

@@ -34,3 +34,16 @@ for (const locale of ['fr', 'es']) {
   }
   console.log(`PASS: ${locale}: ${Object.keys(translated).length} messages, matching parameters and valid syntax`)
 }
+
+const variableTree = JSON.parse(await readFile('src/data/variableTree.json', 'utf8'))
+const variableLabels = JSON.parse(await readFile('src/data/observedVariableLabels.json', 'utf8'))
+function variableIds(nodes) {
+  return nodes.flatMap(({ id, children }) => [String(id), ...variableIds(children ?? [])])
+}
+const ids = variableIds(variableTree)
+assert.deepEqual(Object.keys(variableLabels).sort(), ids.sort(), 'variable translation coverage')
+for (const [id, labels] of Object.entries(variableLabels)) {
+  assert.equal(labels.length, 3, `variable ${id}: zh, fr and es`)
+  assert.ok(labels.every(label => typeof label === 'string' && label.trim()), `variable ${id}: empty translation`)
+}
+console.log(`PASS: all ${ids.length} observation variables have Chinese, French and Spanish labels`)

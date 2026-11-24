@@ -36,13 +36,13 @@
         </div>
       </div>
       <p v-if="typeError" role="alert">{{ t('home.typeCountError') }} <el-button size="small" @click="loadTypeCount">{{ t('common.retry') }}</el-button></p>
-      <OscarMap :map-query="submittedWsi ? { q: submittedWsi } : undefined" />
+      <OscarMap :map-query="submittedStationQuery" focus-exact-match />
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElButton, ElIcon, ElInput } from 'element-plus'
 import 'element-plus/es/components/button/style/css'
@@ -51,7 +51,7 @@ import 'element-plus/es/components/icon/style/css'
 import { Clock, Filter, Location, MapLocation, Search, Share } from '@element-plus/icons-vue'
 import OscarMap from '../components/OscarMap.vue'
 import { focusedStation } from '../stores/quickFilter'
-import { featureToStation, getCatalogueStats, getPopulatedFacilityTypeCount, searchFacilities } from '../api/wigos'
+import { featureToStation, getCatalogueStats, getPopulatedFacilityTypeCount, searchFacilities, type FacilitySearchParams } from '../api/wigos'
 import { territories } from '../data/wmdrTerritories'
 import { useI18n } from 'vue-i18n'
 
@@ -60,10 +60,11 @@ const { t } = useI18n()
 
 const router = useRouter()
 const quickTerm = ref('')
-const submittedWsi = ref('')
+const submittedStationQuery = shallowRef<FacilitySearchParams>()
 watch(quickTerm, (value) => {
   if (!value.trim()) {
-    submittedWsi.value = ''
+    searchController?.abort()
+    submittedStationQuery.value = undefined
     focusedStation.value = null
     searchHint.value = ''
   }
@@ -111,14 +112,19 @@ async function doSearch() {
     searchAttempted.value = true
     return
   }
-  submittedWsi.value = raw.startsWith('0-') ? raw : ''
+  const exact = raw.startsWith('0-')
+  submittedStationQuery.value = exact ? { q: raw } : undefined
   searchBusy.value = true
   try {
     const result = await searchFacilities({ q: raw, limit: 1, sortby: 'title', signal: controller.signal })
     if (controller.signal.aborted) return
     const station = result.features[0] ? featureToStation(result.features[0]) : null
     if (station) {
-      focusedStation.value = station
+      if (!exact && result.numberMatched === 1) {
+        submittedStationQuery.value = { q: station.wigosId }
+      } else if (!exact) {
+        focusedStation.value = station
+      }
       searchHint.value = t('home.hint.found', { count: result.numberMatched, name: station.name, id: station.wigosId })
     } else {
       searchHint.value = t('home.hint.none', { term: raw })
@@ -164,6 +170,12 @@ function goAdvanced() {
 </script>
 
 <style scoped lang="scss">
+@media (min-width: 900px) {
+  .home-hero :deep(.oscar-ol-map) {
+    height: clamp(520px, calc(100dvh - 312px), 820px);
+  }
+}
+
 .home-hero {
   background: #fff;
 }
@@ -175,7 +187,7 @@ function goAdvanced() {
   justify-content: space-between;
   margin-bottom: 14px;
   background-color: #f0f7fc;
-  padding: 20px 20px 0 20px;
+  padding: 32px 20px 10px 20px;
   background-image: url('../assets/header_bg.png');
   background-position: center top;
   background-repeat: no-repeat;
@@ -288,7 +300,7 @@ function goAdvanced() {
 @media (max-width: 991px) {
   .home-hero__top {
     flex-direction: column;
-    padding: 20px 20px 0 20px;
+    padding: 32px 20px 10px 20px;
   }
 
   .home-hero__search {

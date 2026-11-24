@@ -123,7 +123,7 @@ function coverage(bbox?: WigosBbox): WigosBbox | undefined {
 function contains(outer: WigosBbox | undefined, inner: WigosBbox | undefined) {
   return !outer || (!!inner && outer[0] <= inner[0] && outer[1] <= inner[1] && outer[2] >= inner[2] && outer[3] >= inner[3])
 }
-async function liveMap(query: FacilitySearchParams, progress: MapProgress): Promise<FilteredMapResult> {
+async function liveMap(query: FacilitySearchParams, progress: MapProgress, areaRows = false): Promise<FilteredMapResult> {
   // The server omits nested fields from compact responses. Partition by exact
   // type so every returned point still has its correct type/colour, even when
   // the record is new and absent from the static snapshot.
@@ -135,10 +135,14 @@ async function liveMap(query: FacilitySearchParams, progress: MapProgress): Prom
     ['observations.observedProperty.id', [...new Set((query.variables ?? []).map(String))].sort()],
     ['wmoRegion.id', values(query.regions, resolveRegionId)],
   ]
-  const key = JSON.stringify([WIGOS_COLLECTION_URL, query.q?.trim() ?? '', axes])
+  const keyword = query.q?.trim() ?? ''
+  const exactId = areaRows && keyword.startsWith('0-') ? keyword : ''
+  const title = exactId ? '' : keyword
+  const matchesArea = (feature: WigosFeature) => inBbox(feature, query.bbox) && (!exactId || feature.id === exactId)
+  const key = JSON.stringify([WIGOS_COLLECTION_URL, title, axes, areaRows])
   const cached = regionCache.find(c => c.key === key && c.expires > Date.now() && contains(c.bbox, query.bbox))
   if (cached) {
-    const features = cached.result.features.filter(f => inBbox(f, query.bbox))
+    const features = cached.result.features.filter(matchesArea)
     progress(features, features.length, features.length)
     return { ...cached.result, features }
   }
@@ -149,7 +153,7 @@ async function liveMap(query: FacilitySearchParams, progress: MapProgress): Prom
   let loaded = 0, total = 0
   const missing = new Set<string>()
   await pool(branches, async filters => {
-    const base: WigosItemsQuery = { bbox: box, filter: query.q?.trim() ? `properties.title LIKE '${query.q.trim().toLowerCase().replace(/'/g, "''")}'` : undefined, filters, properties: ['title'], sortby: 'title', signal: query.signal }
+    const base: WigosItemsQuery = { bbox: box, filter: title ? `properties.title LIKE '${title.toLowerCase().replace(/'/g, "''")}'` : undefined, filters, properties: areaRows ? undefined : ['title'], sortby: 'title', signal: query.signal }
     const first = await compactPage({ ...base, limit: 1000 })
     const expected = first.numberMatched
     if (!Number.isInteger(expected) || expected < 0) throw new Error('Invalid catalogue map count')
@@ -166,9 +170,10 @@ async function liveMap(query: FacilitySearchParams, progress: MapProgress): Prom
         ids.add(f.id)
         if (!inBbox(f)) { missing.add(f.id); continue }
         if (!found.has(f.id)) {
-          const feature = { ...f, properties: { title: f.properties.title, facilityType: { id: filters['facilityType.id']! } }, mapSummary: true }
+          const properties = areaRows ? f.properties : { title: f.properties.title }
+          const feature = { ...f, properties: { ...properties, facilityType: { id: filters['facilityType.id']! } }, mapSummary: true }
           found.set(f.id, feature)
-          if (inBbox(feature, query.bbox)) delta.push(feature)
+          if (matchesArea(feature)) delta.push(feature)
         }
       }
       offset += page.features.length; loaded += page.features.length
@@ -183,11 +188,15 @@ async function liveMap(query: FacilitySearchParams, progress: MapProgress): Prom
   const result: FilteredMapResult = { features: [...found.values()], unmapped: missing.size }
   regionCache.unshift({ key, bbox: box, expires: Date.now() + TTL, result })
   while (regionCache.length > 12 || regionCache.reduce((sum, c) => sum + c.result.features.length, 0) > 150000) regionCache.pop()
-  return { ...result, features: result.features.filter(f => inBbox(f, query.bbox)) }
+  return { ...result, features: result.features.filter(matchesArea) }
 }
 
-async function load(query: FacilitySearchParams, progress: MapProgress): Promise<FilteredMapResult> {
+async function load(query: FacilitySearchParams, progress: MapProgress, areaRows: boolean): Promise<FilteredMapResult> {
   abortCheck(query.signal)
+  if (areaRows) {
+    if (query.q?.trim() && Array.from(query.q.trim()).length < 3) return { features: [], unmapped: 0 }
+    return liveMap(query, progress, true)
+  }
   if (canUseTypeSnapshot(query)) {
     try { return await typeSnapshot(query, progress) }
     catch { abortCheck(query.signal); return liveMap(query, progress) }
@@ -200,12 +209,16 @@ async function load(query: FacilitySearchParams, progress: MapProgress): Promise
   return liveMap(query, progress)
 }
 
-export async function loadFilteredMap(query: FacilitySearchParams, progress: MapProgress): Promise<FilteredMapResult> {
+export async function loadFilteredMap(
+  query: FacilitySearchParams,
+  progress: MapProgress,
+  { areaRows = false }: { areaRows?: boolean } = {},
+): Promise<FilteredMapResult> {
   abortCheck(query.signal)
   const controller = new AbortController()
   const forward = () => controller.abort(query.signal?.reason)
   query.signal?.addEventListener('abort', forward, { once: true })
-  try { return await load({ ...query, signal: controller.signal }, progress) }
+  try { return await load({ ...query, signal: controller.signal }, progress, areaRows) }
   catch (e) { controller.abort(e); throw e }
   finally { query.signal?.removeEventListener('abort', forward) }
 }

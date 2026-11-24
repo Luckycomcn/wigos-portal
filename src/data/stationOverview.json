@@ -1,5 +1,5 @@
 {
-  "version": "81d185b0cd989bfa",
+  "version": "f388820178954eb2",
   "generatedAt": "2026-11-11T08:58:21.330Z",
   "source": "https://wmo-resource-catalogue.labs.wis2dev.io/collections/wigos-observing-facility-metadata",
   "total": 64976,
@@ -7,9 +7,9 @@
   "unmapped": 529,
   "maxZoom": 5,
   "tileSize": 512,
-  "path": "data/station-overview/81d185b0cd989bfa/{z}/{x}/{y}.pbf",
+  "path": "data/station-overview/f388820178954eb2/{z}/{x}/{y}.pbf",
   "tileCount": 1365,
-  "bytes": 6670702,
+  "bytes": 16228719,
   "pointFiles": {
     "landFixed": {
       "total": 26127,

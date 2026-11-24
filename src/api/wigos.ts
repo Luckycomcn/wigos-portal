@@ -377,9 +377,13 @@ export interface FacilityRow {
   facilityTypeId: string
 }
 
-export function featureToRow(feature: WigosFeature): FacilityRow | null {
+type FacilityListRow = Omit<FacilityRow, 'lat' | 'lon'> & { lat: number | null; lon: number | null }
+
+export function featureToRow(feature: WigosFeature): FacilityRow | null
+export function featureToRow(feature: WigosFeature, includeUnmapped: true): FacilityListRow
+export function featureToRow(feature: WigosFeature, includeUnmapped = false): FacilityListRow | null {
   const coords = featureCoordinates(feature)
-  if (!coords) return null
+  if (!coords && !includeUnmapped) return null
   const typeId = feature.properties.facilityType?.id ?? ''
   return {
     id: feature.id,
@@ -388,9 +392,9 @@ export function featureToRow(feature: WigosFeature): FacilityRow | null {
     country: featureTerritoryNames(feature).join(', '),
     type: facilityTypeTitle(typeId) || typeId,
     status: featureStatus(feature),
-    lat: coords.lat,
-    lon: coords.lon,
-    elevation: coords.elevation,
+    lat: coords?.lat ?? null,
+    lon: coords?.lon ?? null,
+    elevation: coords?.elevation,
     programs: featureProgramIds(feature).map((id) => programTitle(id)),
     established: featureEstablished(feature),
     closed: featureClosed(feature),
@@ -582,12 +586,12 @@ export function resolveRegionId(value: string): string | undefined {
   return wmoRegions.find((region) => region.id.toLowerCase() === needle || region.title.toLowerCase() === needle)?.id
 }
 
-function firstServerValue<T>(values: T[] | undefined, resolve: (value: T) => string | undefined): string | undefined {
-  for (const value of values ?? []) {
-    const resolved = resolve(value)
-    if (resolved) return resolved
-  }
-  return undefined
+function resolveFilterValues(values: string[], resolve: (value: string) => string | undefined): string[] {
+  return [...new Set(values.map(resolve).filter((value): value is string => Boolean(value)))]
+}
+
+function cqlLiteral(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`
 }
 
 function featureMatches(
@@ -649,22 +653,23 @@ export async function searchFacilities(params: FacilitySearchParams = {}): Promi
     return { features, filteredFeatures: features, numberMatched: matches.length, numberReturned: features.length }
   }
 
-  const filters: Record<string, string | undefined> = {
-    'facilityType.id': firstServerValue(types, resolveFacilityTypeId),
-    'observations.programAffiliations.programAffiliation.id': firstServerValue(programs, resolveProgramId),
-    'territories.territory.id': firstServerValue(territories, resolveTerritoryId),
-    'observations.observedProperty.id': variables[0],
-    'wmoRegion.id': firstServerValue(regions, resolveRegionId),
+  // The catalogue accepts pipe-separated alternatives in each queryable field.
+  const filters = {
+    'facilityType.id': resolveFilterValues(types, resolveFacilityTypeId),
+    'observations.programAffiliations.programAffiliation.id': resolveFilterValues(programs, resolveProgramId),
+    'territories.territory.id': resolveFilterValues(territories, resolveTerritoryId),
+    'observations.observedProperty.id': [...new Set(variables)],
+    'wmoRegion.id': resolveFilterValues(regions, resolveRegionId),
   }
 
   const result = await queryFeatures({
     limit: params.limit ?? 25,
     offset: params.offset,
     bbox: params.bbox,
-    filter: candidate ? `properties.title LIKE '${candidate.toLowerCase().replace(/'/g, "''")}'` : undefined,
+    filter: candidate ? `properties.title LIKE ${cqlLiteral(candidate.toLowerCase())}` : undefined,
     sortby: params.sortby ?? 'title',
     properties: params.full === false ? ['title'] : undefined,
-    filters,
+    filters: Object.fromEntries(Object.entries(filters).map(([field, values]) => [field, values.join('|')])),
     signal: params.signal,
     timeoutMs: params.timeoutMs ?? 40000,
   })

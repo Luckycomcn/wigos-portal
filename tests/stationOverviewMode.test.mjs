@@ -13,7 +13,7 @@ const context = {
   mapRef: { value: { getView: () => ({ getZoom: () => zoom }) } },
   DEFAULT_ZOOM: 2.2, overview: { maxZoom: 5 }, overviewActive: { value: false },
   overviewTileSource: local, realtimeTileSource: remote, tileSource: local,
-  pendingTiles: new Set(), stationTiles: { setSource: value => { selected = value } },
+  pendingTiles: new Set(), tileClusterRevision: 0, stationTiles: { setSource: value => { selected = value } },
   hoverRequestVersion: 0, hover: { value: null }, hoverKey: '', mapError: { value: '' }, loading: { value: false },
   popupPinned: { value: false }, isOverPopup: { value: false },
 }

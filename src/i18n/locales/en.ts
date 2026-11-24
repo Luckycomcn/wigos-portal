@@ -19,7 +19,7 @@ export default {
     "brandSub3": "System Portal"
   },
   "footer": {
-    "disclaimer": "Images and catalogue records belong to their respective providers. This portal does not represent WMO or imply its endorsement.",
+    "disclaimer": "The boundaries and names shown and the designations used on this map do not imply official endorsement or acceptance by the World Meteorological Organization or the United Nations.",
     "attribution": "Independent demonstration portal"
   },
   "menu": {
@@ -127,6 +127,7 @@ export default {
     "keywordPlaceholder": "Search by station name or WIGOS ID...",
     "results": "Results",
     "remoteCount": "{count} records in the WMO Resource Catalogue",
+    "mapCount": "{count} stations in the current map view",
     "remoteNote": "Showing {count} of {total} matching records · catalogue time stamp {date}",
     "remoteError": "Unable to query the WMO Resource Catalogue: {message}",
     "loadingRemote": "Loading stations from the WMO Resource Catalogue…",
@@ -286,9 +287,21 @@ export default {
     "email": "Email"
   },
   "map": {
+    "clusterToggle": "Cluster stations",
+    "locateAreaStation": "Locate station",
+    "selectArea": "Select area",
+    "reselectArea": "Reselect area",
+    "cancelAreaDrawing": "Cancel drawing",
+    "clearArea": "Clear area",
+    "areaDrawHint": "Drag on the map to draw a rectangle.",
+    "areaSouthwest": "Southwest (lon, lat)",
+    "areaNortheast": "Northeast (lon, lat)",
+    "applyArea": "Apply bounds",
+    "areaInvalid": "Enter valid coordinates with the southwest corner below and to the left of the northeast corner.",
+    "areaStations": "Stations in area ({count} total)",
     "clusterCount": "{count} stations",
-    "filteredSnapshot": "Filtered map snapshot: {date} · {count} stations in this view (dense points grouped)",
-    "overviewSnapshot": "Station overview (dense points grouped), snapshot: {date}",
+    "filteredSnapshot": "Filtered map snapshot: {date} · {count} stations in this view",
+    "overviewSnapshot": "Station overview, snapshot: {date}",
     "overviewUnmapped": "{count} records without valid point coordinates",
     "overviewZoomHint": "Click this map point to zoom in and inspect stations.",
     "identifying": "Please wait, identifying stations...",

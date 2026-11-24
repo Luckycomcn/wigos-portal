@@ -78,6 +78,23 @@ const titleSearchUrl = new URL(calls.at(-1))
 assert.equal(titleSearchUrl.searchParams.get('filter'), "properties.title LIKE 'o''hare'")
 assert.equal(titleSearchUrl.searchParams.has('q'), false)
 assert.equal(titleSearchUrl.searchParams.get('facilityType.id'), 'landFixed')
+await api.searchFacilities({
+  q: 'Station',
+  types: ['Air (fixed)', 'Air (mobile)'],
+  variables: [210, 216],
+  territories: ['CHE'],
+  offset: 25,
+})
+const multiSearchParams = new URL(calls.at(-1)).searchParams
+assert.equal(multiSearchParams.get('filter'), "properties.title LIKE 'station'")
+assert.equal(multiSearchParams.get('facilityType.id'), 'airFixed|airMobile')
+assert.equal(multiSearchParams.get('observations.observedProperty.id'), '210|216')
+assert.equal(multiSearchParams.get('territories.territory.id'), 'CHE')
+assert.equal(multiSearchParams.get('offset'), '25')
+const unmappedSample = { ...sample, geometry: null }
+assert.equal(api.featureToRow(unmappedSample), null)
+assert.equal(api.featureToRow(unmappedSample, true).id, sample.id)
+assert.equal(api.featureToRow(unmappedSample, true).lat, null)
 globalThis.fetch = async (url, options) => {
   calls.push(String(url))
   if (options.signal.aborted) throw new DOMException('Aborted', 'AbortError')
@@ -192,6 +209,34 @@ assert.equal(mixedTypes.features.length, manifest.pointFiles.landFixed.mapped + 
 assert.equal(mixedTypes.unmapped, manifest.pointFiles.landMobile.unmapped)
 assert.equal(pointRequests, 2)
 console.log('PASS: exact type snapshot completeness, multi-type union and zero-request viewport reuse')
+
+maps.clearMapCache()
+globalThis.fetch = async url => {
+  const params = new URL(url).searchParams
+  assert.equal(params.get('facilityType.id'), 'landFixed')
+  assert.equal(params.get('properties'), null)
+  assert.equal(params.get('bbox'), '0,0,1,1')
+  const station = (id, coordinates) => ({
+    id, type: 'Feature', geometry: { type: 'Point', coordinates }, time: { interval: ['2025-08-19', '..'] },
+    properties: {
+      title: 'Observation station', territories: [{ territory: { id: 'CHE' } }],
+      observations: [{ programAffiliations: [{ programAffiliation: { id: 'GBON' } }] }],
+    },
+  })
+  return new Response(JSON.stringify({
+    features: [station('0-test-inside', [0.5, 0.5]), station('outside', [1, 1])],
+    numberMatched: 2, numberReturned: 2,
+  }))
+}
+const areaQuery = { types: ['Land (fixed)'], bbox: [0, 0, 0.99, 0.99] }
+const area = await maps.loadFilteredMap(areaQuery, () => {}, { areaRows: true })
+assert.deepEqual(Array.from(area.features, station => [station.id, station.properties.title]), [['0-test-inside', 'Observation station']])
+assert.equal(area.features[0].properties.territories[0].territory.id, 'CHE')
+assert.equal(area.features[0].properties.observations[0].programAffiliations[0].programAffiliation.id, 'GBON')
+assert.equal(area.features[0].time.interval[0], '2025-08-19')
+const exactArea = await maps.loadFilteredMap({ ...areaQuery, q: '0-test-inside' }, () => {}, { areaRows: true })
+assert.deepEqual(Array.from(exactArea.features, station => station.id), ['0-test-inside'])
+console.log('PASS: area results retain table fields and apply exact IDs without single-station requests')
 
 maps.clearMapCache(); api.clearWigosCache()
 let active = 0, peak = 0, compactCalls = []

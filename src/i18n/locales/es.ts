@@ -19,7 +19,7 @@ export default {
     "brandSub3": "Portal del sistema"
   },
   "footer": {
-    "disclaimer": "Las imágenes y los registros del catálogo pertenecen a sus proveedores. Este portal no representa a la OMM ni implica su respaldo.",
+    "disclaimer": "Las fronteras y los nombres que figuran en este mapa y las denominaciones que se utilizan en él no implican la aprobación o aceptación oficial por parte de la Organización Meteorológica Mundial ni de las Naciones Unidas.",
     "attribution": "Portal de demostración independiente"
   },
   "common": {
@@ -120,6 +120,7 @@ export default {
     "keywordPlaceholder": "Buscar por nombre de estación o identificador WIGOS...",
     "results": "Resultados",
     "remoteCount": "{count} registros en el catálogo de recursos de la OMM",
+    "mapCount": "{count} estaciones en la vista actual del mapa",
     "remoteNote": "Se muestran {count} de {total} registros coincidentes · fecha del catálogo {date}",
     "remoteError": "No se pudo consultar el catálogo de recursos de la OMM: {message}",
     "loadingRemote": "Cargando estaciones del catálogo de recursos de la OMM…",
@@ -175,9 +176,21 @@ export default {
     "demoNote": "Conectado al catálogo en línea. Las exportaciones filtradas obtienen 250 registros por página, pueden cancelarse y usan los mismos datos que la vista previa."
   },
   "map": {
+    "clusterToggle": "Agrupar estaciones",
+    "locateAreaStation": "Localizar estación",
+    "selectArea": "Seleccionar área",
+    "reselectArea": "Volver a seleccionar",
+    "cancelAreaDrawing": "Cancelar dibujo",
+    "clearArea": "Borrar área",
+    "areaDrawHint": "Arrastre en el mapa para dibujar un rectángulo.",
+    "areaSouthwest": "Suroeste (lon, lat)",
+    "areaNortheast": "Noreste (lon, lat)",
+    "applyArea": "Aplicar límites",
+    "areaInvalid": "Introduzca coordenadas válidas para las esquinas suroeste y noreste.",
+    "areaStations": "Estaciones en el área ({count} en total)",
     "clusterCount": "{count} estaciones",
-    "filteredSnapshot": "Mapa filtrado: instantánea del {date} · {count} estaciones en esta vista (puntos densos agrupados)",
-    "overviewSnapshot": "Vista general de estaciones (puntos densos agrupados), instantánea: {date}",
+    "filteredSnapshot": "Mapa filtrado: instantánea del {date} · {count} estaciones en esta vista",
+    "overviewSnapshot": "Vista general de estaciones, instantánea: {date}",
     "overviewUnmapped": "{count} registros sin coordenadas puntuales válidas",
     "overviewZoomHint": "Pulse este punto para ampliar y consultar las estaciones.",
     "identifying": "Espere, identificando estaciones...",
