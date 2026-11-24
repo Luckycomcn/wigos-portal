@@ -6,6 +6,16 @@
       <div ref="amapEl" class="oscar-amap" :style="{ visibility: basemap === 'amap' ? 'visible' : 'hidden' }"></div>
       <div ref="basemapEl" class="oscar-basemap" aria-hidden="true"></div>
       <div ref="mapEl" class="map oscar-ol-map"></div>
+      <div ref="areaPinEl" class="area-station-pin" aria-hidden="true">
+        <i v-if="activeAreaStation" class="el-icon-location" :style="{ color: domainColors[activeAreaStation.domain] }">
+          <LocationFilled />
+        </i>
+      </div>
+      <div ref="areaHoverPinEl" class="area-station-pin" aria-hidden="true">
+        <i v-if="hoveredAreaStation" class="el-icon-location" :style="{ color: domainColors[hoveredAreaStation.domain] }">
+          <LocationFilled />
+        </i>
+      </div>
 
       <section v-if="selectedArea" v-show="!drawingArea" class="area-results" :aria-label="areaTitle" :aria-busy="loading">
         <header class="area-results__header">
@@ -21,15 +31,18 @@
         <ul v-else ref="areaList" class="area-results__list">
           <li v-for="{ station, row, status } in areaPageStations" :key="station.wigosId" :data-station="station.wigosId"
               :class="{ 'area-results__active': activeAreaStation?.wigosId === station.wigosId }"
-              @mouseenter="highlightAreaStation(station)" @mouseleave="highlightAreaStation()">
+              @mouseenter="highlightAreaStation(station)" @mouseleave="highlightAreaStation()"
+              @click="locateAreaStation(station)">
             <div class="area-results__station">
               <div>
                 <a :href="reportHref(station.wigosId)" target="_blank" rel="noopener noreferrer"
+                   @click.stop
                    @focus="highlightAreaStation(station)" @blur="highlightAreaStation()">{{ station.name }}</a>
                 <small v-if="station.wigosId !== station.name">{{ station.wigosId }}</small>
               </div>
               <button type="button" class="area-results__locate" :title="t('map.locateAreaStation')"
-                      :aria-label="t('map.locateAreaStation') + ' ' + station.name" @click="locateAreaStation(station)">
+                      :aria-label="t('map.locateAreaStation') + ' ' + station.name"
+                      :aria-pressed="activeAreaStation?.wigosId === station.wigosId" @click.stop="locateAreaStation(station)">
                 <i class="el-icon-map-location" aria-hidden="true"><MapLocation /></i>
               </button>
             </div>
@@ -155,9 +168,10 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
-import { Crop, Help, Location, MapLocation } from '@element-plus/icons-vue'
+import { Crop, Help, Location, LocationFilled, MapLocation } from '@element-plus/icons-vue'
 import { filterCountry, filterType, filterPrograms, filterStatuses, focusedStation } from '../stores/quickFilter'
 import Map from 'ol/Map'
+import Overlay from 'ol/Overlay'
 import View from 'ol/View'
 import TileLayer from 'ol/layer/Tile'
 import type LayerGroup from 'ol/layer/Group'
@@ -516,6 +530,20 @@ const areaList = ref<HTMLUListElement>()
 const areaAscending = ref(true)
 const areaSortLabel = computed(() => t('search.th.stationName') + (areaAscending.value ? ' ↑' : ' ↓'))
 const activeAreaStation = shallowRef<Station>()
+const hoveredAreaStation = shallowRef<Station>()
+const areaPinEl = ref<HTMLDivElement>()
+const areaHoverPinEl = ref<HTMLDivElement>()
+const areaPinOptions = {
+  className: 'oscar-area-pin-overlay',
+  positioning: 'bottom-center' as const,
+  stopEvent: false,
+}
+const areaPin = new Overlay(areaPinOptions)
+const areaHoverPin = new Overlay(areaPinOptions)
+watch([activeAreaStation, hoveredAreaStation, basemap], ([active, hovered]) => {
+  areaPin.setPosition(active ? mapCoordinate(active.lon, active.lat) : undefined)
+  areaHoverPin.setPosition(hovered ? mapCoordinate(hovered.lon, hovered.lat) : undefined)
+})
 const areaStations = computed(() => selectedArea.value ? liveFeatures.value.flatMap(feature => {
   const station = featureToStation(feature)
   if (!station) return []
@@ -528,27 +556,22 @@ const areaTitle = computed(() => t('map.areaStations', { count: areaStations.val
 const areaPageCount = computed(() => Math.max(1, Math.ceil(areaStations.value.length / areaPageSize)))
 const areaPageStations = computed(() => areaStations.value.slice((areaPage.value - 1) * areaPageSize, areaPage.value * areaPageSize))
 const areaOutline = new Feature<Polygon>()
-const areaHighlight = new Feature<Point>()
 const areaOutlineLayer = new VectorLayer({
   source: new VectorSource({ features: [areaOutline], wrapX: false }),
   style: new Style({ stroke: new Stroke({ color: '#005a9f', width: 2 }), fill: new Fill({ color: 'rgba(0, 90, 159, 0.07)' }) }),
 })
-const areaHighlightLayer = new VectorLayer({
-  source: new VectorSource({ features: [areaHighlight], wrapX: false }),
-  style: dotStyle('#005a9f', 7),
-})
 const areaBox = new DragBox({ className: 'oscar-area-drag-box' })
 areaBox.setActive(false)
 
-function highlightAreaStation(station = activeAreaStation.value) {
-  areaHighlight.setGeometry(station ? new Point(mapCoordinate(station.lon, station.lat)) : undefined)
+function highlightAreaStation(station?: Station) {
+  hoveredAreaStation.value = station?.wigosId !== activeAreaStation.value?.wigosId ? station : undefined
 }
 
 function locateAreaStation(station: Station) {
   const view = mapRef.value?.getView()
   if (!view) return
   activeAreaStation.value = station
-  highlightAreaStation(station)
+  highlightAreaStation()
   view.cancelAnimations()
   view.animate({
     center: mapCoordinate(station.lon, station.lat),
@@ -976,11 +999,16 @@ async function loadViewport() {
     if (retry) tileSource.refresh()
     return
   }
-  const bbox = area ?? currentBbox()
-  viewportNeedsSize = !bbox
-  if (!bbox) return
+  const visibleBbox = area ?? currentBbox()
+  viewportNeedsSize = !visibleBbox
+  if (!visibleBbox) return
   // An exact station lookup can start outside the visible map.
   const shouldFocus = !area && props.focusExactMatch && query.q?.startsWith('0-') && focusedExactQuery !== query
+  const bounds = query.bbox
+  const bbox: WigosBbox | undefined = shouldFocus ? bounds : bounds ? [
+    Math.max(visibleBbox[0], bounds[0]), Math.max(visibleBbox[1], bounds[1]),
+    Math.min(visibleBbox[2], bounds[2]), Math.min(visibleBbox[3], bounds[3]),
+  ] : visibleBbox
   emit('viewportCount', query, undefined, false)
   const controller = new AbortController()
   viewportController = controller
@@ -1012,7 +1040,8 @@ async function loadViewport() {
     source?.addFeatures(buildCloud())
   }
   try {
-    const result = await loadFilteredMap({ ...query, bbox: shouldFocus ? undefined : bbox, signal: controller.signal }, (delta, loaded, total) => {
+    const emptyBounds = bbox && (bbox[0] >= bbox[2] || bbox[1] >= bbox[3])
+    const result = emptyBounds ? { features: [], unmapped: 0, snapshotDate: undefined } : await loadFilteredMap({ ...query, bbox, signal: controller.signal }, (delta, loaded, total) => {
       if (seq !== loadSeq || controller.signal.aborted) return
       for (const feature of delta) received.set(feature.id, feature)
       mapLoaded.value = loaded
@@ -1087,7 +1116,7 @@ onMounted(() => {
     controls: defaultControls({ zoom: false, rotate: false }).extend([
       createMetricScaleLine(),
     ]),
-    layers: [areaOutlineLayer, stationTiles, vector, clusterLayer, areaHighlightLayer],
+    layers: [areaOutlineLayer, stationTiles, vector, clusterLayer],
     view: new View({
       center: fromLonLat(DEFAULT_CENTER),
       resolution: DEFAULT_WORLD_RESOLUTION,
@@ -1111,7 +1140,13 @@ onMounted(() => {
     layers: [landLayer, gridLayer, ...tiandituLayers],
     view: map.getView(),
   })
-  if (props.areaSelection) map.addInteraction(areaBox)
+  if (props.areaSelection) {
+    map.addInteraction(areaBox)
+    areaPin.setElement(areaPinEl.value)
+    map.addOverlay(areaPin)
+    areaHoverPin.setElement(areaHoverPinEl.value)
+    map.addOverlay(areaHoverPin)
+  }
   map.on('singleclick', (evt) => {
     if (drawingArea.value) return
     const hit = stationAtPixel(map, evt.pixel)
@@ -1213,13 +1248,24 @@ watch(locale, () => {
   for (const kind of Object.keys(worldLayers) as WorldStyleKey[]) void loadWorldLayer(kind)
 })
 
-watch(() => props.mapQuery, () => {
+watch(() => props.mapQuery, (query, previous) => {
   viewportController?.abort()
   loadSeq++
   filteredSnapshotDate.value = ''
   mapLoaded.value = 0
   mapLoadTotal.value = 0
   loading.value = true
+  const bounds = query?.bbox
+  const map = mapRef.value
+  if (bounds && !selectedArea.value && bounds.some((value, index) => value !== previous?.bbox?.[index]) && mapEl.value?.clientWidth) {
+    const south = Math.max(-85, bounds[1])
+    const north = Math.min(85, bounds[3])
+    if (south < north) {
+      map?.getView().fit([...mapCoordinate(bounds[0], south), ...mapCoordinate(bounds[2], north)], {
+        padding: [24, 24, 24, 24], maxZoom: 12,
+      })
+    }
+  }
   window.clearTimeout(viewportTimer)
   viewportTimer = window.setTimeout(() => void loadViewport(), 350)
 }, { deep: true })
@@ -1709,12 +1755,17 @@ function flyToFocusedStation(focus = focusedStation.value) {
 .area-results__status { margin: 0; padding: 8px 12px; font-size: 12px; overflow-wrap: anywhere; }
 .area-results__list { flex: 1; min-height: 0; margin: 0; padding: 0; list-style: none; overflow: auto; overscroll-behavior: contain; }
 .area-results__list li { padding: 9px 12px; border-bottom: 1px solid #e9eff5; overflow-wrap: anywhere; }
+.area-results__list li { cursor: pointer; }
 .area-results__list li:hover, .area-results__list li:focus-within, .area-results__active { background: #e6f2ff; }
 .area-results__station { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
 .area-results__header button, .area-results__locate { flex: 0 0 auto; display: grid; place-items: center; width: 27px; height: 27px; padding: 0; border: 1px solid #dce6ef; border-radius: 4px; background: #fff; color: #005a9f; cursor: pointer; }
 .area-results__header button:hover, .area-results__locate:hover { border-color: #005a9f; }
 .area-results__locate i { display: flex; }
 .area-results__locate svg { width: 17px; height: 17px; }
+.area-results__locate[aria-pressed='true'] { border-color: #005a9f; background: #e6f2ff; }
+.oscar-ol-wrap :deep(.oscar-area-pin-overlay) { pointer-events: none !important; }
+.area-station-pin i { display: flex; }
+.area-station-pin svg { width: 32px; height: 32px; display: block; stroke: #fff; stroke-width: 45; paint-order: stroke; filter: drop-shadow(0 1px 2px #25455a70); }
 .area-results__list dl { display: grid; gap: 3px; margin: 6px 0 0; font-size: 12px; }
 .area-results__list dl div { display: flex; align-items: baseline; gap: 5px; }
 .area-results__list dt { flex: 0 0 auto; font-weight: 600; }

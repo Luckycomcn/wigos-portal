@@ -548,6 +548,9 @@ export interface FacilitySearchParams {
   variables?: (string | number)[]
   /** WMO region ids (europe) or titles. */
   regions?: string[]
+  reportingStatuses?: string[]
+  minElevation?: number
+  maxElevation?: number
   bbox?: WigosBbox
   limit?: number
   offset?: number
@@ -594,6 +597,24 @@ function cqlLiteral(value: string): string {
   return `'${value.replace(/'/g, "''")}'`
 }
 
+export const REPORTING_STATUS_FIELD = 'observations.programAffiliations.reportingStatus.id'
+
+export function hasElevationFilter(query: FacilitySearchParams) {
+  return query.minElevation !== undefined || query.maxElevation !== undefined
+}
+
+export function matchesElevation(feature: WigosFeature, query: FacilitySearchParams) {
+  if (!hasElevationFilter(query)) return true
+  const elevation = featureCoordinates(feature)?.elevation
+  return elevation !== undefined && elevation >= (query.minElevation ?? -Infinity) && elevation <= (query.maxElevation ?? Infinity)
+}
+
+function matchesReportingStatus(feature: WigosFeature, statuses: string[]) {
+  return !statuses.length || Boolean(feature.properties.observations?.some(observation =>
+    observation.programAffiliations?.some(affiliation => statuses.includes(affiliation.reportingStatus?.id ?? '')),
+  ))
+}
+
 function featureMatches(
   feature: WigosFeature,
   types: string[],
@@ -634,6 +655,7 @@ export async function searchFacilities(params: FacilitySearchParams = {}): Promi
   const territories = params.territories?.filter(Boolean) ?? []
   const variables = (params.variables ?? []).map(String).filter(Boolean)
   const regions = params.regions?.filter(Boolean) ?? []
+  const reportingStatuses = [...new Set(params.reportingStatuses?.filter(Boolean))]
 
   const candidate = params.q?.trim()
   // Empty keywords allow browsing by the other advanced criteria.
@@ -647,7 +669,8 @@ export async function searchFacilities(params: FacilitySearchParams = {}): Promi
     const inBbox = !params.bbox || (coordinates != null &&
       coordinates.lon >= params.bbox[0] && coordinates.lat >= params.bbox[1] &&
       coordinates.lon <= params.bbox[2] && coordinates.lat <= params.bbox[3])
-    const matches = feature && inBbox && featureMatches(feature, types, programs, territories, variables, regions)
+    const matches = feature && inBbox && matchesElevation(feature, params) && matchesReportingStatus(feature, reportingStatuses) &&
+      featureMatches(feature, types, programs, territories, variables, regions)
       ? [feature] : []
     const features = matches.slice(params.offset ?? 0, (params.offset ?? 0) + (params.limit ?? 25))
     return { features, filteredFeatures: features, numberMatched: matches.length, numberReturned: features.length }
@@ -660,9 +683,10 @@ export async function searchFacilities(params: FacilitySearchParams = {}): Promi
     'territories.territory.id': resolveFilterValues(territories, resolveTerritoryId),
     'observations.observedProperty.id': [...new Set(variables)],
     'wmoRegion.id': resolveFilterValues(regions, resolveRegionId),
+    [REPORTING_STATUS_FIELD]: reportingStatuses,
   }
 
-  const result = await queryFeatures({
+  const query: WigosItemsQuery = {
     limit: params.limit ?? 25,
     offset: params.offset,
     bbox: params.bbox,
@@ -672,7 +696,21 @@ export async function searchFacilities(params: FacilitySearchParams = {}): Promi
     filters: Object.fromEntries(Object.entries(filters).map(([field, values]) => [field, values.join('|')])),
     signal: params.signal,
     timeoutMs: params.timeoutMs ?? 40000,
-  })
+  }
+  if (hasElevationFilter(params)) {
+    // Elevation is the third coordinate, with no server-side range query.
+    const result = await queryFeaturesPaged(query, Infinity, 500)
+    if (new Set(result.features.map(feature => feature.id)).size !== result.numberMatched) throw new Error('Incomplete catalogue pagination')
+    const matches = result.features.filter(feature => matchesElevation(feature, params))
+    const offset = params.offset ?? 0
+    const features = matches.slice(offset, offset + (params.limit ?? 25))
+    return {
+      features, filteredFeatures: features, numberMatched: matches.length,
+      numberReturned: features.length, timeStamp: result.timeStamp,
+    }
+  }
+
+  const result = await queryFeatures(query)
 
   return {
     features: result.features,
@@ -748,5 +786,6 @@ export async function loadMapPages(query: FacilitySearchParams, progress: (featu
 /** XYZ source templates must put the row (y) before the column (x). */
 export const WIGOS_TILES_URL = WIGOS_COLLECTION_URL + '/tiles/WebMercatorQuad/{z}/{y}/{x}?f=pbf'
 export function useMapTiles(query: FacilitySearchParams): boolean {
-  return !query.q?.trim() && ![query.types, query.programs, query.territories, query.variables, query.regions].some(values => values?.length)
+  return !query.q?.trim() && !query.bbox && !hasElevationFilter(query) &&
+    ![query.types, query.programs, query.territories, query.variables, query.regions, query.reportingStatuses].some(values => values?.length)
 }

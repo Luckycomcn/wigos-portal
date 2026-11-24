@@ -3,6 +3,7 @@ import { facilityTypes } from '../data/wmdrCodes'
 import {
   WIGOS_COLLECTION_URL, buildItemsUrl, queryFeatures, searchFacilities,
   resolveFacilityTypeId, resolveProgramId, resolveTerritoryId, resolveRegionId,
+  REPORTING_STATUS_FIELD, hasElevationFilter, matchesElevation,
   type WigosFeature, type WigosBbox, type WigosItemsQuery, type WigosFeatureCollection, type FacilitySearchParams,
 } from './wigos'
 
@@ -68,7 +69,7 @@ async function pointRows(type: string, signal?: AbortSignal) {
 }
 export function canUseTypeSnapshot(query: FacilitySearchParams) {
   return overview.source === WIGOS_COLLECTION_URL && !!query.types?.length && !query.q?.trim() &&
-    ![query.programs, query.territories, query.variables, query.regions].some(v => v?.length)
+    !hasElevationFilter(query) && ![query.programs, query.territories, query.variables, query.regions, query.reportingStatuses].some(v => v?.length)
 }
 async function typeSnapshot(query: FacilitySearchParams, progress: MapProgress): Promise<FilteredMapResult> {
   const types = values(query.types, resolveFacilityTypeId)
@@ -134,11 +135,13 @@ async function liveMap(query: FacilitySearchParams, progress: MapProgress, areaR
     ['territories.territory.id', values(query.territories, resolveTerritoryId)],
     ['observations.observedProperty.id', [...new Set((query.variables ?? []).map(String))].sort()],
     ['wmoRegion.id', values(query.regions, resolveRegionId)],
+    [REPORTING_STATUS_FIELD, [...new Set(query.reportingStatuses ?? [])].sort()],
   ]
   const keyword = query.q?.trim() ?? ''
   const exactId = areaRows && keyword.startsWith('0-') ? keyword : ''
   const title = exactId ? '' : keyword
-  const matchesArea = (feature: WigosFeature) => inBbox(feature, query.bbox) && (!exactId || feature.id === exactId)
+  const matchesArea = (feature: WigosFeature) => inBbox(feature, query.bbox) &&
+    matchesElevation(feature, query) && (!exactId || feature.id === exactId)
   const key = JSON.stringify([WIGOS_COLLECTION_URL, title, axes, areaRows])
   const cached = regionCache.find(c => c.key === key && c.expires > Date.now() && contains(c.bbox, query.bbox))
   if (cached) {

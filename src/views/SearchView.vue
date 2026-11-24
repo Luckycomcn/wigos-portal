@@ -11,6 +11,49 @@
           <el-option v-for="option in field.options" :key="option.value" :label="option.label" :value="option.value" />
         </el-select>
       </label>
+      <fieldset class="advanced-filter">
+        <legend>{{ t('search.advanced.reportingStatus') }}</legend>
+        <div class="status-source">
+          <label><input v-model="statusSource" type="radio" value="declared" /> {{ t('search.advanced.declared') }}</label>
+          <label><input v-model="statusSource" type="radio" value="assessed" /> {{ t('search.advanced.assessed') }}</label>
+        </div>
+        <el-select v-model="selectedReportingStatuses" multiple collapse-tags collapse-tags-tooltip clearable
+                   :placeholder="t('common.all')"
+                   :aria-label="t('search.advanced.reportingStatus')">
+          <el-option v-for="status in visibleStatuses" :key="status" :value="status" :label="t('search.advanced.' + status)" />
+        </el-select>
+      </fieldset>
+      <label class="criterion">
+        <span>{{ t('search.advanced.approval') }}</span>
+        <el-select v-model="approvalStatus" :aria-label="t('search.advanced.approval')">
+          <el-option value="all" :label="t('common.all')" />
+          <el-option v-for="status in approvalStatuses" :key="status" :value="status" :label="t('search.advanced.' + status)" />
+        </el-select>
+        <small v-if="approvalStatus !== 'all'" role="status">{{ t('search.advanced.approvalUnavailable') }}</small>
+      </label>
+      <form class="range-filter" @submit.prevent="applyRanges">
+        <fieldset class="advanced-filter">
+          <legend>{{ t('search.advanced.coordinates') }}</legend>
+          <div class="range-filter__grid">
+            <label v-for="field in coordinateFields" :key="field.key">
+              <span>{{ t('search.advanced.' + field.key) }}</span>
+              <input v-model="rangeDraft[field.key]" type="number" step="any" :min="-field.max" :max="field.max" />
+            </label>
+          </div>
+        </fieldset>
+        <fieldset class="advanced-filter">
+          <legend>{{ t('search.advanced.elevation') }}</legend>
+          <div class="range-filter__grid">
+            <label><span>{{ t('search.advanced.minElevation') }}</span><input v-model="rangeDraft.minElevation" type="number" step="any" /></label>
+            <label><span>{{ t('search.advanced.maxElevation') }}</span><input v-model="rangeDraft.maxElevation" type="number" step="any" /></label>
+          </div>
+        </fieldset>
+        <p v-if="invalidRange" role="alert">{{ t('search.advanced.invalidRange') }}</p>
+        <div class="range-filter__actions">
+          <el-button type="primary" native-type="submit" size="small">{{ t('common.search') }}</el-button>
+          <!-- <el-button native-type="button" size="small" @click="resetRanges">{{ t('common.reset') }}</el-button> -->
+        </div>
+      </form>
     </aside>
     <section v-if="mode === 'map'" class="area-controls">
       <div class="area-controls__actions">
@@ -144,6 +187,42 @@ function applyArea() {
   if (!invalidArea.value) mapWidget.value?.setSelectedArea([west!, south!, east!, north!])
 }
 const filters = reactive<Record<FilterKey, string[]>>({ type: [], program: [], variable: [], ra: [], terr: [] })
+const statusSource = ref<'declared' | 'assessed'>('declared')
+const reportingStatuses = ref<string[]>([])
+const assessedStatuses = ref<string[]>([])
+const selectedReportingStatuses = computed({
+  get: () => statusSource.value === 'declared' ? reportingStatuses.value : assessedStatuses.value,
+  set: (value: string[]) => {
+    if (statusSource.value === 'declared') reportingStatuses.value = value
+    else assessedStatuses.value = value
+  },
+})
+const declaredStatuses = ['operational', 'partlyOperational', 'unknown', 'nonReporting', 'closed']
+const visibleStatuses = computed(() => statusSource.value === 'declared' ? declaredStatuses : declaredStatuses.slice(0, -1))
+const approvalStatuses = ['approved', 'declined', 'pending']
+const approvalStatus = ref('all')
+const coordinateFields = [
+  { key: 'longitudeFrom', max: 180 }, { key: 'longitudeTo', max: 180 },
+  { key: 'latitudeFrom', max: 90 }, { key: 'latitudeTo', max: 90 },
+] as const
+const emptyRangeDraft = { longitudeFrom: '', longitudeTo: '', latitudeFrom: '', latitudeTo: '', minElevation: '', maxElevation: '' }
+const rangeDraft = reactive({ ...emptyRangeDraft })
+const appliedRange = shallowRef<Pick<FacilitySearchParams, 'bbox' | 'minElevation' | 'maxElevation'>>({})
+const invalidRange = ref(false)
+
+function applyRanges() {
+  const { longitudeFrom, longitudeTo, latitudeFrom, latitudeTo, minElevation, maxElevation } = rangeDraft
+  const hasBounds = [longitudeFrom, longitudeTo, latitudeFrom, latitudeTo].some(value => value !== '')
+  const west = longitudeFrom === '' ? -180 : Number(longitudeFrom)
+  const east = longitudeTo === '' ? 180 : Number(longitudeTo)
+  const south = latitudeFrom === '' ? -90 : Number(latitudeFrom)
+  const north = latitudeTo === '' ? 90 : Number(latitudeTo)
+  const minimum = minElevation === '' ? undefined : Number(minElevation)
+  const maximum = maxElevation === '' ? undefined : Number(maxElevation)
+  invalidRange.value = west >= east || south >= north || (minimum !== undefined && maximum !== undefined && minimum > maximum)
+  if (invalidRange.value) return
+  appliedRange.value = { bbox: hasBounds ? [west, south, east, north] : undefined, minElevation: minimum, maxElevation: maximum }
+}
 const rows = ref<Station[]>([])
 const total = ref(0)
 const fetchedAt = ref('')
@@ -164,6 +243,12 @@ function flattenVariables(nodes: VariableNode[]): { id: number; text: string }[]
     if (node.children?.length) out.push(...flattenVariables(node.children))
   }
   return out
+}
+
+function resetRanges() {
+  Object.assign(rangeDraft, emptyRangeDraft)
+  appliedRange.value = {}
+  invalidRange.value = false
 }
 
 const variableOptions = flattenVariables(variableTreeRaw as VariableNode[])
@@ -191,6 +276,12 @@ const activeCriteria = computed(() =>
     keyword.value.trim(),
     ...fields.value.flatMap(({ key, options }) =>
       filters[key].map((value) => options.find((option) => option.value === value)?.label ?? value)),
+    ...(statusSource.value === 'declared' ? reportingStatuses.value.map(status => t('search.advanced.' + status)) : []),
+    ...(appliedRange.value.bbox ? [t('search.advanced.coordinates') + ' ' + appliedRange.value.bbox.join(', ')] : []),
+    ...(['minElevation', 'maxElevation'] as const).flatMap(key => {
+      const value = appliedRange.value[key]
+      return value === undefined ? [] : [t('search.advanced.' + key) + ' ' + value + ' m']
+    }),
   ].filter(Boolean),
 )
 
@@ -201,6 +292,8 @@ const mapQuery = computed(() => ({
   territories: [...filters.terr],
   variables: filters.variable.map(Number),
   regions: [...filters.ra],
+  reportingStatuses: statusSource.value === 'declared' ? [...reportingStatuses.value] : [],
+  ...appliedRange.value,
 }))
 const showMapCount = computed(() => mode.value === 'map' && (Boolean(mapWidget.value?.selectedArea) || !useMapTiles(mapQuery.value)))
 const uniqueKeywordMatch = shallowRef<{ query: FacilitySearchParams; id: string }>()
@@ -260,13 +353,13 @@ async function loadPage() {
   pageController?.abort()
   const seq = ++requestSeq
   const mapOnly = mode.value === 'map'
-  if (mapOnly && mapWidget.value?.selectedArea) {
+  const query = mapQuery.value
+  if (mapOnly && (mapWidget.value?.selectedArea || query.minElevation !== undefined || query.maxElevation !== undefined)) {
     loading.value = false
     return
   }
   const controller = new AbortController()
   pageController = controller
-  const query = mapQuery.value
   loading.value = true
   error.value = ''
   try {
@@ -312,6 +405,11 @@ function coordinate(value: number | null, latitude: boolean) {
 function reset() {
   keyword.value = ''
   for (const key of Object.keys(filters) as FilterKey[]) filters[key] = []
+  statusSource.value = 'declared'
+  reportingStatuses.value = []
+  assessedStatuses.value = []
+  approvalStatus.value = 'all'
+  resetRanges()
   page.value = 1
   void loadPage()
 }
@@ -379,10 +477,21 @@ watch([rows, total, activeCriteria], () => {
 </script>
 
 <style scoped lang="scss">
-.station-browser { --search-accent: var(--oscar-theme); display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 18px; padding: 16px; background: #f2f6fa; align-items: start; color: #536475; }
+.station-browser { --search-accent: var(--oscar-theme); display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; padding: 16px; background: #f2f6fa; align-items: start; color: #536475; }
 .criteria-card, .results-card { background: white; border: 1px solid #e0e8ec; border-radius: 8px; padding: 20px; min-width: 0; }
 .criteria-card { max-height: calc(100vh - 190px); overflow-y: auto; }
 .criteria-column { min-width: 0; }
+.advanced-filter { min-width: 0; margin: 0 0 12px; padding: 8px; }
+.advanced-filter legend { padding: 0 4px; font-size: 13px; }
+.advanced-filter p, .criterion small, .range-filter p { margin: 6px 0 0; font-size: 12px; }
+.status-source { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; font-size: 12px; }
+.status-source label { display: flex; align-items: center; gap: 3px; }
+.range-filter__grid { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.range-filter__grid label { display: grid; gap: 4px; font-size: 12px; }
+.range-filter__grid input { box-sizing: border-box; width: 100%; padding: 5px; border: 1px solid #c4d2de; border-radius: 4px; }
+.range-filter [role='alert'] { color: #a12727; margin-bottom: 6px; }
+.range-filter__actions { display: flex; gap: 8px; }
+.range-filter__actions :deep(.el-button + .el-button) { margin-left: 0; }
 .area-controls { margin-top: 12px; padding: 14px; background: #fff; border: 1px solid #e0e8ec; border-radius: 8px; }
 .area-controls__actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .area-controls__actions :deep(.el-button + .el-button) { margin-left: 0; }
