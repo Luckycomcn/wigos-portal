@@ -21,7 +21,7 @@ const context = {
     forEachFeatureAtPixel() { throw Error('Unexpected canvas hit test for a vector tile') },
     getTargetElement: () => ({ style: {} }),
   }),
-  isOverPopup: ref(false), pendingTimer: 0, hideTimer: 0,
+  drawingArea: ref(false), selectedArea: ref(undefined), isOverPopup: ref(false), pendingTimer: 0, hideTimer: 0,
   window: { setTimeout(fn) { callback = fn; return 1 }, clearTimeout() {} },
   t: (key, {count}) => `${count} stations`,
   Date, hover: ref(null), hoverKey: '', popupPos: ref({}),

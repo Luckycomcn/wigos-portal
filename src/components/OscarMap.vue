@@ -2,10 +2,52 @@
   <div class="oscar-map-shell">
     <p v-if="downloadError" class="map-download-error" role="alert">{{ downloadError }}</p>
     <div v-show="identifying" class="oscar-map-wait">{{ $t('map.identifying') }}</div>
-    <div class="oscar-ol-wrap" :class="{ 'oscar-ol-wrap--single-world': basemap === 'osm' }" ref="wrapEl">
+    <div class="oscar-ol-wrap" :class="{ 'oscar-ol-wrap--single-world': basemap === 'osm', 'oscar-ol-wrap--drawing': drawingArea }" ref="wrapEl">
       <div ref="amapEl" class="oscar-amap" :style="{ visibility: basemap === 'amap' ? 'visible' : 'hidden' }"></div>
       <div ref="basemapEl" class="oscar-basemap" aria-hidden="true"></div>
       <div ref="mapEl" class="map oscar-ol-map"></div>
+
+      <section v-if="selectedArea" v-show="!drawingArea" class="area-results" :aria-label="areaTitle" :aria-busy="loading">
+        <header class="area-results__header">
+          <h3 aria-live="polite">{{ areaTitle }}</h3>
+          <button type="button" :aria-label="areaSortLabel" :title="areaSortLabel"
+                  @click="areaAscending = !areaAscending; setAreaPage(1)">{{ areaAscending ? '↑' : '↓' }}</button>
+        </header>
+        <p v-if="loading" class="area-results__status" role="status">{{ t('common.loading') }}</p>
+        <div v-if="mapError" class="area-results__status" role="alert">
+          {{ mapError }} <button type="button" @click="loadViewport">{{ t('common.retry') }}</button>
+        </div>
+        <p v-else-if="!loading && !areaStations.length" class="area-results__status">{{ t('search.noMatching') }}</p>
+        <ul v-else ref="areaList" class="area-results__list">
+          <li v-for="{ station, row, status } in areaPageStations" :key="station.wigosId" :data-station="station.wigosId"
+              :class="{ 'area-results__active': activeAreaStation?.wigosId === station.wigosId }"
+              @mouseenter="highlightAreaStation(station)" @mouseleave="highlightAreaStation()">
+            <div class="area-results__station">
+              <div>
+                <a :href="reportHref(station.wigosId)" target="_blank" rel="noopener noreferrer"
+                   @focus="highlightAreaStation(station)" @blur="highlightAreaStation()">{{ station.name }}</a>
+                <small v-if="station.wigosId !== station.name">{{ station.wigosId }}</small>
+              </div>
+              <button type="button" class="area-results__locate" :title="t('map.locateAreaStation')"
+                      :aria-label="t('map.locateAreaStation') + ' ' + station.name" @click="locateAreaStation(station)">
+                <i class="el-icon-map-location" aria-hidden="true"><MapLocation /></i>
+              </button>
+            </div>
+            <dl>
+              <div><dt>{{ t('search.th.type') }}</dt><dd>{{ row.type || '—' }}</dd></div>
+              <div><dt>{{ t('search.th.territory') }}</dt><dd>{{ row.country || '—' }}</dd></div>
+              <div><dt>{{ t('search.th.position') }}</dt><dd>{{ station.lat.toFixed(3) }}, {{ station.lon.toFixed(3) }}</dd></div>
+              <div><dt>{{ t('search.th.status') }}</dt><dd>{{ status || '—' }}</dd></div>
+              <div><dt>{{ t('search.th.program') }}</dt><dd>{{ row.programs.join(', ') || '—' }}</dd></div>
+            </dl>
+          </li>
+        </ul>
+        <div v-if="areaPageCount > 1" class="area-results__pagination">
+          <button type="button" :disabled="areaPage === 1" :aria-label="t('common.previousPage')" @click="setAreaPage(areaPage - 1)">‹</button>
+          <span>{{ areaPage }} / {{ areaPageCount }}</span>
+          <button type="button" :disabled="areaPage === areaPageCount" :aria-label="t('common.nextPage')" @click="setAreaPage(areaPage + 1)">›</button>
+        </div>
+      </section>
 
       <div
         v-if="hover"
@@ -63,9 +105,14 @@
         <button type="button" :title="$t('map.resetView')" class="oscar-map-tools__icon" @click="resetView">
           <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 4.5A7.5 7.5 0 1 1 4.5 12H6a6 6 0 1 0 2.1-4.5L10 10H4V4l2.2 2.2A7.47 7.47 0 0 1 12 4.5z"/></svg>
         </button>
+        <button v-if="props.areaSelection" type="button" class="oscar-map-tools__icon"
+                :aria-pressed="drawingArea" :aria-label="t('map.selectArea')" :title="t('map.selectArea')"
+                @click="setDrawingArea(!drawingArea)">
+          <Crop aria-hidden="true" />
+        </button>
       </div>
 
-      <div class="oscar-map-tools oscar-map-tools--cluster">
+      <div v-if="!selectedArea" class="oscar-map-tools oscar-map-tools--cluster">
         <button
           type="button"
           :aria-pressed="clusterEnabled"
@@ -89,7 +136,7 @@
         <span v-if="basemapStatus" role="status">{{ $t(basemapStatus) }}</span>
       </div>
 
-      <div v-if="loading || mapError || (!tilesActive && !matchedCount)" class="map-data-status" role="status" aria-live="polite">
+      <div v-if="!selectedArea && (loading || mapError || (!tilesActive && !matchedCount))" class="map-data-status" role="status" aria-live="polite">
         <span v-if="loading">{{ $t('common.loading') }}<span v-if="mapLoadTotal"> {{ mapLoaded.toLocaleString() }} / {{ mapLoadTotal.toLocaleString() }}</span></span>
         <span v-if="!tilesActive && !loading && !mapError && !matchedCount">{{ locale === 'zh' ? '无匹配站点' : 'No matching stations' }}</span>
         <span v-if="mapError" role="alert"> · {{ locale === 'zh' ? '加载失败，结果不完整：' : 'Loading failed; results incomplete: ' }}{{ mapError }} <button @click="loadViewport">{{ $t('common.retry') }}</button></span>
@@ -107,8 +154,8 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
-import { Help, Location } from '@element-plus/icons-vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { Crop, Help, Location, MapLocation } from '@element-plus/icons-vue'
 import { filterCountry, filterType, filterPrograms, filterStatuses, focusedStation } from '../stores/quickFilter'
 import Map from 'ol/Map'
 import View from 'ol/View'
@@ -122,12 +169,13 @@ import VectorLayer from 'ol/layer/Vector'
 import VectorSource from 'ol/source/Vector'
 import VectorTileLayer from 'ol/layer/VectorTile'
 import VectorTileSource from 'ol/source/VectorTile'
+import DragBox from 'ol/interaction/DragBox'
 import MVT from 'ol/format/MVT'
 import Feature from 'ol/Feature'
 import type Geometry from 'ol/geom/Geometry'
 import GeoJSON from 'ol/format/GeoJSON'
 import Point from 'ol/geom/Point'
-import Polygon from 'ol/geom/Polygon'
+import Polygon, { fromExtent } from 'ol/geom/Polygon'
 import LineString from 'ol/geom/LineString'
 import { fromLonLat, getPointResolution, toLonLat, transformExtent } from 'ol/proj'
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style'
@@ -144,6 +192,7 @@ import {
   WIGOS_COLLECTION_URL,
   useMapTiles,
   type FacilitySearchParams,
+  type WigosBbox,
   getFeature,
   featureClosed,
   featureEstablished,
@@ -151,6 +200,7 @@ import {
   featureStatus,
   featureToStation,
   type WigosFeature,
+  featureToRow,
 } from '../api/wigos'
 import { facilityTypeDomain, facilityTypeTitle, programTitle, findTerritoryId, programIdByTitle } from '../data/wmdrCodes'
 import 'ol/ol.css'
@@ -173,6 +223,7 @@ const props = defineProps<{
   visibleStations?: Station[]
   mapQuery?: FacilitySearchParams
   focusExactMatch?: boolean
+  areaSelection?: boolean
 }>()
 const emit = defineEmits<{
   viewportCount: [query: FacilitySearchParams, count: number | undefined, failed: boolean]
@@ -252,7 +303,10 @@ function syncAmap() {
 }
 const tilesActive = ref(false)
 const overviewActive = ref(false)
-const clusterEnabled = ref(false)
+const drawingArea = ref(false)
+const selectedArea = shallowRef<WigosBbox>()
+const clusterPreference = ref(false)
+const clusterEnabled = computed(() => clusterPreference.value && !selectedArea.value)
 const clusterSource = new VectorSource({ wrapX: false })
 const clusterLayer = new VectorLayer({
   source: clusterSource,
@@ -413,7 +467,7 @@ function syncClusterLayers() {
 }
 
 function toggleClustering() {
-  clusterEnabled.value = !clusterEnabled.value
+  clusterPreference.value = !clusterPreference.value
   hoverRequestVersion++
   hover.value = null
   hoverKey = ''
@@ -456,6 +510,109 @@ let viewportTimer = 0
 let loadSeq = 0
 
 const liveFeatures = shallowRef<WigosFeature[]>([])
+const areaPageSize = 100
+const areaPage = ref(1)
+const areaList = ref<HTMLUListElement>()
+const areaAscending = ref(true)
+const areaSortLabel = computed(() => t('search.th.stationName') + (areaAscending.value ? ' ↑' : ' ↓'))
+const activeAreaStation = shallowRef<Station>()
+const areaStations = computed(() => selectedArea.value ? liveFeatures.value.flatMap(feature => {
+  const station = featureToStation(feature)
+  if (!station) return []
+  const row = featureToRow(feature, true)
+  const status = feature.time?.interval?.some(value => value && value !== '..') ? row.status : ''
+  return [{ station, row, status }]
+}).sort((a, b) => (areaAscending.value ? 1 : -1) *
+  (a.station.name.localeCompare(b.station.name, locale.value) || a.station.wigosId.localeCompare(b.station.wigosId))) : [])
+const areaTitle = computed(() => t('map.areaStations', { count: areaStations.value.length.toLocaleString(locale.value) }))
+const areaPageCount = computed(() => Math.max(1, Math.ceil(areaStations.value.length / areaPageSize)))
+const areaPageStations = computed(() => areaStations.value.slice((areaPage.value - 1) * areaPageSize, areaPage.value * areaPageSize))
+const areaOutline = new Feature<Polygon>()
+const areaHighlight = new Feature<Point>()
+const areaOutlineLayer = new VectorLayer({
+  source: new VectorSource({ features: [areaOutline], wrapX: false }),
+  style: new Style({ stroke: new Stroke({ color: '#005a9f', width: 2 }), fill: new Fill({ color: 'rgba(0, 90, 159, 0.07)' }) }),
+})
+const areaHighlightLayer = new VectorLayer({
+  source: new VectorSource({ features: [areaHighlight], wrapX: false }),
+  style: dotStyle('#005a9f', 7),
+})
+const areaBox = new DragBox({ className: 'oscar-area-drag-box' })
+areaBox.setActive(false)
+
+function highlightAreaStation(station = activeAreaStation.value) {
+  areaHighlight.setGeometry(station ? new Point(mapCoordinate(station.lon, station.lat)) : undefined)
+}
+
+function locateAreaStation(station: Station) {
+  const view = mapRef.value?.getView()
+  if (!view) return
+  activeAreaStation.value = station
+  highlightAreaStation(station)
+  view.cancelAnimations()
+  view.animate({
+    center: mapCoordinate(station.lon, station.lat),
+    zoom: Math.max(view.getZoom() ?? 0, 8),
+    duration: 350,
+  })
+}
+
+function setAreaPage(page: number) {
+  areaPage.value = page
+  if (areaList.value) areaList.value.scrollTop = 0
+  highlightAreaStation()
+}
+
+async function revealAreaStation(id: string) {
+  const index = areaStations.value.findIndex(({ station }) => station.wigosId === id)
+  const station = areaStations.value[index]?.station
+  if (!station) return
+  activeAreaStation.value = station
+  setAreaPage(Math.floor(index / areaPageSize) + 1)
+  await nextTick()
+  const list = areaList.value
+  const row = list?.querySelector<HTMLElement>('[data-station="' + CSS.escape(id) + '"]')
+  if (list && row) {
+    list.scrollTop += row.getBoundingClientRect().top - list.getBoundingClientRect().top
+  }
+}
+
+function drawAreaOutline() {
+  const area = selectedArea.value
+  areaOutline.setGeometry(area ? fromExtent([...mapCoordinate(area[0], area[1]), ...mapCoordinate(area[2], area[3])]) : undefined)
+}
+
+function setDrawingArea(active: boolean) {
+  drawingArea.value = active
+  areaBox.setActive(active)
+  hoverRequestVersion++
+  hover.value = null
+  hoverKey = ''
+  popupPinned.value = false
+  isOverPopup.value = false
+  const target = mapRef.value?.getTargetElement()
+  if (target) target.style.cursor = active ? 'crosshair' : ''
+}
+
+function setSelectedArea(area?: WigosBbox) {
+  setDrawingArea(false)
+  selectedArea.value = area
+  activeAreaStation.value = undefined
+  setAreaPage(1)
+  drawAreaOutline()
+  syncClusterLayers()
+  stationTiles.changed()
+  window.clearTimeout(viewportTimer)
+  void loadViewport()
+}
+
+areaBox.on('boxend', () => {
+  const [west, south, east, north] = geographicExtent(areaBox.getGeometry().getExtent())
+  const bbox: WigosBbox = [Math.max(-180, west), Math.max(-85, south), Math.min(180, east), Math.min(85, north)]
+  if (bbox[0] < bbox[2] && bbox[1] < bbox[3]) setSelectedArea(bbox)
+})
+
+defineExpose({ selectedArea, drawingArea, setDrawingArea, setSelectedArea })
 const detailCache: Record<string, WigosFeature> = {}
 
 const LAND_FILL = '#f2f5ef'
@@ -623,6 +780,7 @@ function stationAtPixel(map: Map, pixel: number[]) {
 }
 
 function onPointerMove(evt: { pixel: number[] }) {
+  if (drawingArea.value || selectedArea.value) return
   const map = mapRef.value
   if (!map) return
   if (isOverPopup.value) return
@@ -745,12 +903,7 @@ async function runDownload(format: 'xml' | 'json') {
 
 const downloadXml = () => runDownload('xml')
 const downloadWmdrV2 = () => runDownload('json')
-function currentBbox(): [number, number, number, number] | null {
-  const map = mapRef.value
-  const size = map?.getSize()
-  if (!map || !size?.[0] || !size[1] || !mapEl.value?.clientWidth || !mapEl.value.clientHeight) return null
-  const view = map.getView()
-  const ext = view.calculateExtent(size)
+function geographicExtent(ext: number[]): WigosBbox {
   let [minLon, minLat, maxLon, maxLat] = transformExtent(ext, 'EPSG:3857', 'EPSG:4326')
   if (basemap.value === 'amap') {
     const [gcjWest, gcjSouth] = toGcj02(minLon, minLat)
@@ -760,6 +913,14 @@ function currentBbox(): [number, number, number, number] | null {
     maxLon += maxLon - gcjEast
     maxLat += maxLat - gcjNorth
   }
+  return [minLon, minLat, maxLon, maxLat]
+}
+
+function currentBbox(): WigosBbox | null {
+  const map = mapRef.value
+  const size = map?.getSize()
+  if (!map || !size?.[0] || !size[1] || !mapEl.value?.clientWidth || !mapEl.value.clientHeight) return null
+  const [minLon, minLat, maxLon, maxLat] = geographicExtent(map.getView().calculateExtent(size))
   const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
   // A wrapped viewport must include both sides of the date line.
   // Query all longitudes when crossing it; never silently clip away one side.
@@ -797,7 +958,8 @@ async function loadViewport() {
   filteredUnmapped.value = 0
   mapLoaded.value = 0
   mapLoadTotal.value = 0
-  tilesActive.value = useMapTiles(query)
+  const area = selectedArea.value
+  tilesActive.value = !area && useMapTiles(query)
   selectStationSource()
   stationTiles.setVisible(tilesActive.value)
   if (wasTiles !== tilesActive.value) syncClusterLayers()
@@ -814,11 +976,11 @@ async function loadViewport() {
     if (retry) tileSource.refresh()
     return
   }
-  const bbox = currentBbox()
+  const bbox = area ?? currentBbox()
   viewportNeedsSize = !bbox
   if (!bbox) return
   // An exact station lookup can start outside the visible map.
-  const shouldFocus = props.focusExactMatch && query.q?.startsWith('0-') && focusedExactQuery !== query
+  const shouldFocus = !area && props.focusExactMatch && query.q?.startsWith('0-') && focusedExactQuery !== query
   emit('viewportCount', query, undefined, false)
   const controller = new AbortController()
   viewportController = controller
@@ -826,6 +988,10 @@ async function loadViewport() {
   loading.value = true
   mapError.value = ''
   matchedCount.value = 0
+  if (area) {
+    activeAreaStation.value = undefined
+    setAreaPage(1)
+  }
   liveFeatures.value = []
   vectorRef.value?.getSource()?.clear()
   if (focusedExactQuery !== query) {
@@ -852,7 +1018,7 @@ async function loadViewport() {
       mapLoaded.value = loaded
       mapLoadTotal.value = total
       if (!paintTimer) paintTimer = window.setTimeout(paint, 150)
-    })
+    }, { areaRows: Boolean(area) })
     if (seq === loadSeq && !controller.signal.aborted) {
       received.clear()
       for (const feature of result.features) received.set(feature.id, feature)
@@ -921,12 +1087,13 @@ onMounted(() => {
     controls: defaultControls({ zoom: false, rotate: false }).extend([
       createMetricScaleLine(),
     ]),
-    layers: [stationTiles, vector, clusterLayer],
+    layers: [areaOutlineLayer, stationTiles, vector, clusterLayer, areaHighlightLayer],
     view: new View({
       center: fromLonLat(DEFAULT_CENTER),
       resolution: DEFAULT_WORLD_RESOLUTION,
       minZoom: -2,
       maxZoom: 18,
+      enableRotation: !props.areaSelection,
       extent: WORLD_EXTENT,
       constrainOnlyCenter: true,
       constrainResolution: false,
@@ -944,8 +1111,21 @@ onMounted(() => {
     layers: [landLayer, gridLayer, ...tiandituLayers],
     view: map.getView(),
   })
+  if (props.areaSelection) map.addInteraction(areaBox)
   map.on('singleclick', (evt) => {
+    if (drawingArea.value) return
     const hit = stationAtPixel(map, evt.pixel)
+    if (selectedArea.value) {
+      const station = hit?.get('station') as Station | undefined
+      if (station) {
+        hoverRequestVersion++
+        hover.value = null
+        hoverKey = ''
+        popupPinned.value = false
+        void revealAreaStation(station.wigosId)
+      }
+      return
+    }
     if (Number(hit?.get('count') ?? 1) > 1) {
       const view = map.getView()
       const maxZoom = clusterEnabled.value ? view.getMaxZoom() : overview.maxZoom + 1
@@ -973,8 +1153,14 @@ onMounted(() => {
     clipWorldBasemap(map)
     updateStationClusters(map)
   })
-  map.on('movestart', () => { viewportController?.abort(); loadSeq++; if (!tilesActive.value) loading.value = false })
+  map.on('movestart', () => {
+    if (selectedArea.value) return
+    viewportController?.abort()
+    loadSeq++
+    if (!tilesActive.value) loading.value = false
+  })
   map.on('moveend', () => {
+    if (selectedArea.value) return
     if (!tilesActive.value) {
       const source = vectorRef.value?.getSource()
       source?.clear()
@@ -1219,6 +1405,8 @@ async function selectBasemap(event: Event) {
   const isWorld = next === 'osm'
   basemapStatus.value = ''
   basemap.value = next
+  drawAreaOutline()
+  highlightAreaStation()
   rememberBasemap(next)
   for (const [kind, layer] of Object.entries(worldLayers) as [WorldStyleKey, LayerGroup][]) {
     layer.setVisible(kind === next)
@@ -1490,12 +1678,59 @@ function flyToFocusedStation(focus = focusedStation.value) {
   bottom: 14px;
 }
 
+.oscar-ol-wrap--drawing :deep(.oscar-ol-map) {
+  cursor: crosshair;
+}
+
+.oscar-ol-wrap :deep(.oscar-area-drag-box) {
+  border: 2px dashed #005a9f;
+  background: rgba(0, 90, 159, 0.12);
+}
+
+.area-results {
+  position: absolute;
+  z-index: 5;
+  top: 64px;
+  left: 14px;
+  bottom: 42px;
+  width: min(320px, 44%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid #dce6ef;
+  border-radius: 8px;
+  box-shadow: 0 3px 12px rgba(27, 60, 89, 0.16);
+  color: #253b50;
+}
+
+.area-results__header { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 8px 6px 12px; border-bottom: 1px solid #dce6ef; }
+.area-results h3 { margin: 0; font-size: 14px; }
+.area-results__status { margin: 0; padding: 8px 12px; font-size: 12px; overflow-wrap: anywhere; }
+.area-results__list { flex: 1; min-height: 0; margin: 0; padding: 0; list-style: none; overflow: auto; overscroll-behavior: contain; }
+.area-results__list li { padding: 9px 12px; border-bottom: 1px solid #e9eff5; overflow-wrap: anywhere; }
+.area-results__list li:hover, .area-results__list li:focus-within, .area-results__active { background: #e6f2ff; }
+.area-results__station { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
+.area-results__header button, .area-results__locate { flex: 0 0 auto; display: grid; place-items: center; width: 27px; height: 27px; padding: 0; border: 1px solid #dce6ef; border-radius: 4px; background: #fff; color: #005a9f; cursor: pointer; }
+.area-results__header button:hover, .area-results__locate:hover { border-color: #005a9f; }
+.area-results__locate i { display: flex; }
+.area-results__locate svg { width: 17px; height: 17px; }
+.area-results__list dl { display: grid; gap: 3px; margin: 6px 0 0; font-size: 12px; }
+.area-results__list dl div { display: flex; align-items: baseline; gap: 5px; }
+.area-results__list dt { flex: 0 0 auto; font-weight: 600; }
+.area-results__list dd { min-width: 0; margin: 0; }
+.area-results__list a { color: #005a9f; font-size: 13px; font-weight: 600; }
+.area-results__list small { display: block; color: #526b82; }
+.area-results__pagination { display: flex; justify-content: space-between; align-items: center; padding: 4px 10px; border-top: 1px solid #dce6ef; font-size: 12px; }
+.area-results__pagination button { min-width: 28px; border: 1px solid #dce6ef; border-radius: 4px; background: #fff; color: #005a9f; }
+.area-results__pagination button:disabled { opacity: 0.45; }
+
 .oscar-map-tools--cluster button {
   display: grid;
   place-items: center;
 }
 
-.oscar-map-tools--cluster button[aria-pressed='true'] {
+.oscar-map-tools button[aria-pressed='true'] {
   background: var(--oscar-theme);
   border-color: var(--oscar-theme);
   color: #fff;

@@ -210,6 +210,34 @@ assert.equal(mixedTypes.unmapped, manifest.pointFiles.landMobile.unmapped)
 assert.equal(pointRequests, 2)
 console.log('PASS: exact type snapshot completeness, multi-type union and zero-request viewport reuse')
 
+maps.clearMapCache()
+globalThis.fetch = async url => {
+  const params = new URL(url).searchParams
+  assert.equal(params.get('facilityType.id'), 'landFixed')
+  assert.equal(params.get('properties'), null)
+  assert.equal(params.get('bbox'), '0,0,1,1')
+  const station = (id, coordinates) => ({
+    id, type: 'Feature', geometry: { type: 'Point', coordinates }, time: { interval: ['2025-08-19', '..'] },
+    properties: {
+      title: 'Observation station', territories: [{ territory: { id: 'CHE' } }],
+      observations: [{ programAffiliations: [{ programAffiliation: { id: 'GBON' } }] }],
+    },
+  })
+  return new Response(JSON.stringify({
+    features: [station('0-test-inside', [0.5, 0.5]), station('outside', [1, 1])],
+    numberMatched: 2, numberReturned: 2,
+  }))
+}
+const areaQuery = { types: ['Land (fixed)'], bbox: [0, 0, 0.99, 0.99] }
+const area = await maps.loadFilteredMap(areaQuery, () => {}, { areaRows: true })
+assert.deepEqual(Array.from(area.features, station => [station.id, station.properties.title]), [['0-test-inside', 'Observation station']])
+assert.equal(area.features[0].properties.territories[0].territory.id, 'CHE')
+assert.equal(area.features[0].properties.observations[0].programAffiliations[0].programAffiliation.id, 'GBON')
+assert.equal(area.features[0].time.interval[0], '2025-08-19')
+const exactArea = await maps.loadFilteredMap({ ...areaQuery, q: '0-test-inside' }, () => {}, { areaRows: true })
+assert.deepEqual(Array.from(exactArea.features, station => station.id), ['0-test-inside'])
+console.log('PASS: area results retain table fields and apply exact IDs without single-station requests')
+
 maps.clearMapCache(); api.clearWigosCache()
 let active = 0, peak = 0, compactCalls = []
 globalThis.fetch = async url => {

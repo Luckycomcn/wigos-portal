@@ -1,5 +1,6 @@
 <template>
   <div class="station-browser">
+    <div class="criteria-column">
     <aside class="criteria-card">
       <header><h2>{{ $t('search.criteria') }}</h2><el-button size="small" @click="reset">{{ $t('common.reset') }}</el-button></header>
       <label class="criterion"><span>{{ $t('search.keyword') }}</span><el-input v-model="keyword" clearable @focus="keywordFocused = true" @blur="keywordFocused = false" @keyup.enter="submitKeyword" :placeholder="$t('search.keywordPlaceholder')" :prefix-icon="Search" /></label>
@@ -11,6 +12,22 @@
         </el-select>
       </label>
     </aside>
+    <section v-if="mode === 'map'" class="area-controls">
+      <div class="area-controls__actions">
+        <el-button :type="mapWidget?.drawingArea ? 'default' : 'primary'" :disabled="!mapWidget" @click="toggleAreaDrawing">
+          {{ t(mapWidget?.drawingArea ? 'map.cancelAreaDrawing' : mapWidget?.selectedArea ? 'map.reselectArea' : 'map.selectArea') }}
+        </el-button>
+        <el-button v-if="mapWidget?.selectedArea" @click="mapWidget?.setSelectedArea()">{{ t('map.clearArea') }}</el-button>
+      </div>
+      <p v-if="mapWidget?.drawingArea" role="status">{{ t('map.areaDrawHint') }}</p>
+      <form v-if="mapWidget?.selectedArea" class="area-controls__coordinates" @submit.prevent="applyArea">
+        <label>{{ t('map.areaSouthwest') }} <input v-model="southwest" required autocomplete="off" /></label>
+        <label>{{ t('map.areaNortheast') }} <input v-model="northeast" required autocomplete="off" /></label>
+        <p v-if="invalidArea" role="alert">{{ t('map.areaInvalid') }}</p>
+        <el-button native-type="submit" size="small">{{ t('map.applyArea') }}</el-button>
+      </form>
+    </section>
+    </div>
     <section class="results-card" :aria-busy="showMapCount ? mapCount === undefined && !mapCountFailed : loading">
       <header class="results-header">
         <div>
@@ -25,7 +42,7 @@
       </header>
       <div class="active-criteria"><span>{{ $t('search.activeCriteria', { value: activeCriteria.length ? activeCriteria.join(' · ') : $t('search.none') }) }}</span></div>
       <div v-if="mapOpened" v-show="mode === 'map'" class="map-wrap">
-        <OscarMap :map-query="displayedMapQuery" focus-exact-match @viewport-count="updateMapCount" />
+        <OscarMap ref="mapWidget" :map-query="displayedMapQuery" focus-exact-match area-selection @viewport-count="updateMapCount" />
       </div>
       <p v-if="loading && mode === 'list'" class="state-message">{{ $t('search.loadingRemote') }}</p>
       <div v-else-if="error && mode === 'list'" class="state-message" role="alert">{{ error }} <el-button @click="loadPage">{{ $t('common.retry') }}</el-button></div>
@@ -101,6 +118,31 @@ const keywordFocused = ref(false)
 const keywordTooShort = computed(() => keywordFocused.value && Array.from(keyword.value.trim()).length < 3)
 const mode = ref<'map' | 'list'>(route.query.mode === 'list' ? 'list' : 'map')
 const mapOpened = ref(mode.value === 'map')
+const mapWidget = ref<InstanceType<typeof OscarMap>>()
+const southwest = ref('')
+const northeast = ref('')
+const invalidArea = ref(false)
+
+watch(() => mapWidget.value?.selectedArea, area => {
+  const format = (lon: number, lat: number) => `${lon.toFixed(6)}, ${lat.toFixed(6)}`
+  southwest.value = area ? format(area[0], area[1]) : ''
+  northeast.value = area ? format(area[2], area[3]) : ''
+  invalidArea.value = false
+})
+
+function toggleAreaDrawing() {
+  mapWidget.value?.setDrawingArea(!mapWidget.value.drawingArea)
+}
+
+function applyArea() {
+  const parts = [...southwest.value.split(','), ...northeast.value.split(',')].map(value => value.trim())
+  const [west, south, east, north] = parts.map(Number)
+  invalidArea.value = parts.length !== 4 || parts.some(value => !value) ||
+    west === undefined || south === undefined || east === undefined || north === undefined ||
+    ![west, south, east, north].every(Number.isFinite) ||
+    west < -180 || east > 180 || south < -85 || north > 85 || west >= east || south >= north
+  if (!invalidArea.value) mapWidget.value?.setSelectedArea([west!, south!, east!, north!])
+}
 const filters = reactive<Record<FilterKey, string[]>>({ type: [], program: [], variable: [], ra: [], terr: [] })
 const rows = ref<Station[]>([])
 const total = ref(0)
@@ -160,9 +202,10 @@ const mapQuery = computed(() => ({
   variables: filters.variable.map(Number),
   regions: [...filters.ra],
 }))
-const showMapCount = computed(() => mode.value === 'map' && !useMapTiles(mapQuery.value))
+const showMapCount = computed(() => mode.value === 'map' && (Boolean(mapWidget.value?.selectedArea) || !useMapTiles(mapQuery.value)))
 const uniqueKeywordMatch = shallowRef<{ query: FacilitySearchParams; id: string }>()
 const displayedMapQuery = computed(() => {
+  if (mapWidget.value?.selectedArea) return mapQuery.value
   const match = uniqueKeywordMatch.value
   return match?.query === mapQuery.value ? { ...match.query, q: match.id } : mapQuery.value
 })
@@ -215,10 +258,14 @@ function toStation(feature: WigosFeature): Station {
 
 async function loadPage() {
   pageController?.abort()
-  const controller = new AbortController()
-  pageController = controller
   const seq = ++requestSeq
   const mapOnly = mode.value === 'map'
+  if (mapOnly && mapWidget.value?.selectedArea) {
+    loading.value = false
+    return
+  }
+  const controller = new AbortController()
+  pageController = controller
   const query = mapQuery.value
   loading.value = true
   error.value = ''
@@ -304,7 +351,11 @@ watch(displayedMapQuery, () => {
   mapCountFailed.value = false
 })
 watch(mapQuery, scheduleReload)
+watch(() => Boolean(mapWidget.value?.selectedArea), () => {
+  if (mode.value === 'map') void loadPage()
+})
 watch(mode, () => {
+  if (mode.value !== 'map') mapWidget.value?.setDrawingArea(false)
   if (mode.value === 'map') mapOpened.value = true
   void loadPage()
 })
@@ -331,6 +382,16 @@ watch([rows, total, activeCriteria], () => {
 .station-browser { --search-accent: var(--oscar-theme); display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 18px; padding: 16px; background: #f2f6fa; align-items: start; color: #536475; }
 .criteria-card, .results-card { background: white; border: 1px solid #e0e8ec; border-radius: 8px; padding: 20px; min-width: 0; }
 .criteria-card { max-height: calc(100vh - 190px); overflow-y: auto; }
+.criteria-column { min-width: 0; }
+.area-controls { margin-top: 12px; padding: 14px; background: #fff; border: 1px solid #e0e8ec; border-radius: 8px; }
+.area-controls__actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.area-controls__actions :deep(.el-button + .el-button) { margin-left: 0; }
+.area-controls p { margin: 8px 0 0; font-size: 12px; }
+.area-controls__coordinates { display: grid; gap: 8px; margin-top: 12px; }
+.area-controls__coordinates label { display: grid; gap: 4px; font-size: 12px; }
+.area-controls__coordinates input { min-width: 0; padding: 6px 8px; border: 1px solid #c4d2de; border-radius: 4px; color: #253b50; }
+.area-controls__coordinates button { justify-self: start; }
+.area-controls p[role='alert'] { color: #a12727; }
 header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 h2 { display: inline; margin: 0; padding: 0; border: 0; text-transform: uppercase; font-size: 13px; letter-spacing: 1px; font-weight: 700; color: #405365; }
 .criterion { display: block; margin-top: 17px; font-weight: 400; }
