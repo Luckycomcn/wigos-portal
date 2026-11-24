@@ -65,6 +65,21 @@
         </button>
       </div>
 
+      <div class="oscar-map-tools oscar-map-tools--cluster">
+        <button
+          type="button"
+          :aria-pressed="clusterEnabled"
+          :aria-label="t('map.clusterToggle')"
+          :title="t('map.clusterToggle')"
+          @click="toggleClustering"
+        >
+          <i :class="clusterEnabled ? 'el-icon-help' : 'el-icon-location-outline'" aria-hidden="true">
+            <Help v-if="clusterEnabled" />
+            <Location v-else />
+          </i>
+        </button>
+      </div>
+
       <div class="oscar-map-layers">
         <select :value="basemap" :aria-label="$t('map.basemap')" @change="selectBasemap">
           <option value="osm">{{ $t('map.basemapOsm') }}</option>
@@ -93,6 +108,7 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { Help, Location } from '@element-plus/icons-vue'
 import { filterCountry, filterType, filterPrograms, filterStatuses, focusedStation } from '../stores/quickFilter'
 import Map from 'ol/Map'
 import View from 'ol/View'
@@ -236,6 +252,15 @@ function syncAmap() {
 }
 const tilesActive = ref(false)
 const overviewActive = ref(false)
+const clusterEnabled = ref(false)
+const clusterSource = new VectorSource({ wrapX: false })
+const clusterLayer = new VectorLayer({
+  source: clusterSource,
+  visible: false,
+  style: feature => tileStyles[feature.get('domain') as StationDomain],
+})
+let tileClusterRevision = 0
+let clusterKey = ''
 let overviewUnavailable = overview.source !== WIGOS_COLLECTION_URL
 const pendingTiles = new Set<unknown>()
 const realtimeTileSource = new VectorTileSource({
@@ -257,7 +282,7 @@ const stationTiles = new VectorTileLayer({
   visible: false,
   declutter: false,
   style: feature => {
-    if (feature.get('layer') !== 'hits') return undefined
+    if (clusterEnabled.value || feature.get('layer') !== 'hits') return undefined
     return tileStyles[facilityTypeDomain(feature.get('properties.facilityType.id') ?? '')]
   },
 })
@@ -267,6 +292,7 @@ function selectStationSource() {
   const next = local ? overviewTileSource : realtimeTileSource
   if (tileSource === next) return
   pendingTiles.clear()
+  tileClusterRevision++
   tileSource = next
   stationTiles.setSource(next)
   hoverRequestVersion++
@@ -279,7 +305,124 @@ function selectStationSource() {
 }
 function tileFinished(tile: unknown) {
   pendingTiles.delete(tile)
+  tileClusterRevision++
   if (tilesActive.value) loading.value = pendingTiles.size > 0
+}
+
+function createStationCluster(geometry: Point, features: Feature[]) {
+  const domainCounts = new globalThis.Map<StationDomain, number>()
+  let count = 0
+  for (const feature of features) {
+    const domain: StationDomain = feature.get('domain') ?? facilityTypeDomain(feature.get('properties.facilityType.id') ?? '')
+    const stationCount = Number(feature.get('count')) || 1
+    count += stationCount
+    domainCounts.set(domain, (domainCounts.get(domain) ?? 0) + stationCount)
+  }
+  let domain: StationDomain = 'land-ocean'
+  let largestCount = 0
+  for (const [candidate, domainCount] of domainCounts) {
+    if (domainCount <= largestCount) continue
+    domain = candidate
+    largestCount = domainCount
+  }
+  return new Feature({ geometry, features, count, domain })
+}
+
+function clusterGroupSize(resolution: number) {
+  const zoomSteps = DEFAULT_WORLD_RESOLUTION / resolution
+  if (zoomSteps < 2 - 1e-9) return 20
+  if (zoomSteps < 4 - 1e-9) return 10
+  if (zoomSteps < 8 - 1e-9) return 5
+  return 1
+}
+
+function spatialOrder(x: number, y: number) {
+  // Interleave coordinate bits to keep nearby stations close in the sort order.
+  const [minX, minY, maxX, maxY] = WORLD_EXTENT
+  const column = Math.floor(65535 * (x - minX) / (maxX - minX))
+  const row = Math.floor(65535 * (y - minY) / (maxY - minY))
+  let order = 0
+  for (let bit = 0; bit < 16; bit++) {
+    order |= ((column >>> bit) & 1) << (2 * bit)
+    order |= ((row >>> bit) & 1) << (2 * bit + 1)
+  }
+  return order >>> 0
+}
+
+function groupStationPoints(points: Feature[], groupSize: number) {
+  const ordered = points.flatMap(feature => {
+    const geometry = feature.getGeometry()
+    if (!(geometry instanceof Point)) return []
+    const [x, y] = geometry.getCoordinates() as [number, number]
+    return [{ feature, x, y, order: groupSize > 1 ? spatialOrder(x, y) : 0 }]
+  })
+  if (groupSize > 1) ordered.sort((a, b) => a.order - b.order)
+  const groups: Feature[] = []
+  for (let start = 0; start < ordered.length; start += groupSize) {
+    const group = ordered.slice(start, start + groupSize)
+    let x = 0
+    let y = 0
+    for (const point of group) {
+      x += point.x
+      y += point.y
+    }
+    groups.push(createStationCluster(new Point([x / group.length, y / group.length]), group.map(point => point.feature)))
+  }
+  return groups
+}
+
+function tilePointsInExtent(extent: number[]) {
+  const points: Feature[] = []
+  const seen = new Set<unknown>()
+  for (const feature of stationTiles.getFeaturesInExtent(extent)) {
+    if (feature.get('layer') !== 'hits') continue
+    const geometry = feature.getGeometry()
+    if (geometry?.getType() !== 'Point') continue
+    const id = feature.get('id') ?? feature.get('_id') ?? feature.getId()
+    if (id != null && seen.has(id)) continue
+    if (id != null) seen.add(id)
+    points.push(new Feature({ ...feature.getProperties(), geometry: new Point(geometry.getFlatCoordinates()) }))
+  }
+  return points
+}
+
+function updateStationClusters(map: Map) {
+  const size = map.getSize()
+  const view = map.getView()
+  const resolution = view.getResolution()
+  if (!clusterEnabled.value || !size || !resolution || view.getAnimating() || view.getInteracting()) return
+  const groupSize = clusterGroupSize(resolution)
+  const extent = view.calculateExtent(size)
+  const source = vectorRef.value?.getSource()
+  const key = tilesActive.value
+    ? ['tiles', tileClusterRevision, groupSize, ...extent].join(',')
+    : ['stations', source?.getRevision(), groupSize].join(',')
+  if (key === clusterKey) return
+  clusterKey = key
+  const points = tilesActive.value ? tilePointsInExtent(extent) : source?.getFeatures() ?? []
+  const groups = groupStationPoints(points, groupSize)
+  clusterSource.clear(true)
+  clusterSource.addFeatures(groups)
+}
+
+function syncClusterLayers() {
+  clusterKey = ''
+  clusterSource.clear(true)
+  clusterLayer.setVisible(clusterEnabled.value)
+  vectorRef.value?.setVisible(!clusterEnabled.value)
+}
+
+function toggleClustering() {
+  clusterEnabled.value = !clusterEnabled.value
+  hoverRequestVersion++
+  hover.value = null
+  hoverKey = ''
+  selected.value = null
+  popupPinned.value = false
+  isOverPopup.value = false
+  dlOpen.value = false
+  syncClusterLayers()
+  stationTiles.changed()
 }
 for (const source of [overviewTileSource, realtimeTileSource]) {
   source.on('tileloadstart', event => {
@@ -447,6 +590,12 @@ function hoverFromFeature(feature: WigosFeature): HoverInfo {
 }
 
 function stationAtPixel(map: Map, pixel: number[]) {
+  if (clusterEnabled.value) {
+    return map.forEachFeatureAtPixel(pixel, feature => {
+      const members = feature.get('features') as Feature[]
+      return feature.get('count') > 1 ? feature : members[0]
+    }, { hitTolerance: 6, layerFilter: layer => layer === clusterLayer })
+  }
   if (tilesActive.value) {
     const coordinate = map.getCoordinateFromPixel(pixel)
     const resolution = map.getView().getResolution()
@@ -651,6 +800,7 @@ async function loadViewport() {
   tilesActive.value = useMapTiles(query)
   selectStationSource()
   stationTiles.setVisible(tilesActive.value)
+  if (wasTiles !== tilesActive.value) syncClusterLayers()
   if (tilesActive.value) {
     viewportNeedsSize = false
     loadSeq++
@@ -771,7 +921,7 @@ onMounted(() => {
     controls: defaultControls({ zoom: false, rotate: false }).extend([
       createMetricScaleLine(),
     ]),
-    layers: [stationTiles, vector],
+    layers: [stationTiles, vector, clusterLayer],
     view: new View({
       center: fromLonLat(DEFAULT_CENTER),
       resolution: DEFAULT_WORLD_RESOLUTION,
@@ -795,12 +945,19 @@ onMounted(() => {
     view: map.getView(),
   })
   map.on('singleclick', (evt) => {
+    const hit = stationAtPixel(map, evt.pixel)
+    if (Number(hit?.get('count') ?? 1) > 1) {
+      const view = map.getView()
+      const maxZoom = clusterEnabled.value ? view.getMaxZoom() : overview.maxZoom + 1
+      const geometry = hit?.getGeometry()
+      const center = geometry instanceof Point ? geometry.getCoordinates() : evt.coordinate
+      popupPinned.value = false
+      hover.value = null
+      const zoomStep = clusterEnabled.value ? 1 : 2
+      view.animate({ center, zoom: Math.min(maxZoom, (view.getZoom() ?? 2) + zoomStep), duration: 250 })
+      return
+    }
     if (tilesActive.value) {
-      const hit = stationAtPixel(map, evt.pixel)
-      if (Number(hit?.get('count') ?? 1) > 1) {
-        map.getView().animate({ center: evt.coordinate, zoom: Math.min(overview.maxZoom + 1, (map.getView().getZoom() ?? 2) + 2), duration: 250 })
-        return
-      }
       if (hit) onPointerMove(evt)
       return
     }
@@ -808,13 +965,13 @@ onMounted(() => {
     window.setTimeout(() => {
       identifying.value = false
     }, 250)
-    const hit = map.forEachFeatureAtPixel(evt.pixel, (feat) => feat)
     selected.value = (hit?.get('station') as Station | undefined) ?? null
   })
   map.on('pointermove', onPointerMove)
   map.on('postrender', () => {
     syncAmap()
     clipWorldBasemap(map)
+    updateStationClusters(map)
   })
   map.on('movestart', () => { viewportController?.abort(); loadSeq++; if (!tilesActive.value) loading.value = false })
   map.on('moveend', () => {
@@ -1107,7 +1264,7 @@ function flyToFocusedStation(focus = focusedStation.value) {
 }
 </script>
 <style scoped lang="scss">
-.map-data-status { position: absolute; bottom: 30px; left: 12px; right: 12px; z-index: 5; padding: 6px 10px; background: #fffffff0; border-radius: 5px; font-size: 12px; overflow-wrap: anywhere; }
+.map-data-status { position: absolute; bottom: 30px; left: 12px; right: 56px; z-index: 5; padding: 6px 10px; background: #fffffff0; border-radius: 5px; font-size: 12px; overflow-wrap: anywhere; }
 .overview-note { margin: 4px 16px; font-size: 11px; color: #586e83; }
 .oscar-map-shell {
   position: relative;
@@ -1326,6 +1483,31 @@ function flyToFocusedStation(focus = focusedStation.value) {
 .oscar-map-tools__icon svg {
   width: 16px;
   height: 16px;
+}
+
+.oscar-map-tools--cluster {
+  top: auto;
+  bottom: 14px;
+}
+
+.oscar-map-tools--cluster button {
+  display: grid;
+  place-items: center;
+}
+
+.oscar-map-tools--cluster button[aria-pressed='true'] {
+  background: var(--oscar-theme);
+  border-color: var(--oscar-theme);
+  color: #fff;
+}
+
+.oscar-map-tools--cluster i {
+  display: flex;
+}
+
+.oscar-map-tools--cluster svg {
+  width: 18px;
+  height: 18px;
 }
 
 .oscar-amap {

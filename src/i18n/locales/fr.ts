@@ -176,6 +176,7 @@ export default {
     "demoNote": "Connecté au catalogue en ligne. Les exportations filtrées récupèrent 250 enregistrements par page, peuvent être annulées et utilisent les mêmes données que l’aperçu."
   },
   "map": {
+    "clusterToggle": "Regrouper les stations",
     "clusterCount": "{count} stations",
     "filteredSnapshot": "Carte filtrée : instantané du {date} · {count} stations dans cette vue",
     "overviewSnapshot": "Aperçu des stations, instantané : {date}",

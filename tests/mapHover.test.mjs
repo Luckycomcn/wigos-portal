@@ -33,7 +33,7 @@ const context = {
   stationTiles: { getFeaturesInExtent(extent) {
     assert.deepEqual(Array.from(extent), [84, 184, 116, 216])
     return [fartherHit, hit]
-  } }, tilesActive: ref(true), hoverRequestVersion: 0, vectorRef: ref({}),
+  } }, tilesActive: ref(true), clusterEnabled: ref(false), hoverRequestVersion: 0, vectorRef: ref({}),
 }
 vm.createContext(context);vm.runInContext(code,context)
 context.onPointerMove({ pixel: [0,0] })
@@ -56,3 +56,19 @@ assert.equal(context.hover.value.count, 42)
 assert.equal(context.hover.value.title, '42 stations')
 assert.equal(context.hover.value.wigosId, '')
 console.log('PASS: overview groups show counts without requesting individual station details')
+
+const clusterLayer = {}
+const clusterHit = {
+  get: key => ({ features: [fartherHit, hit], count: 2 })[key],
+}
+context.clusterEnabled.value = true
+context.clusterLayer = clusterLayer
+context.mapRef.value.forEachFeatureAtPixel = (pixel, callback, { layerFilter }) => {
+  assert.equal(layerFilter(clusterLayer), true)
+  assert.equal(layerFilter(context.stationTiles), false)
+  return callback(clusterHit)
+}
+assert.equal(context.stationAtPixel(context.mapRef.value, [30, 40]), clusterHit)
+clusterHit.get = key => ({ features: [fartherHit], count: 1 })[key]
+assert.equal(context.stationAtPixel(context.mapRef.value, [30, 40]), fartherHit)
+console.log('PASS: cluster hit testing preserves group counts and unwraps individual stations')

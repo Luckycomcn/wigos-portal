@@ -31,3 +31,20 @@ for (const visibleStations of [undefined, stations]) {
   assert.ok(features.every(feature => feature.get('count') === undefined))
 }
 console.log('PASS: filtered and provided stations render individually, even at identical coordinates')
+
+const groupingStart = source.indexOf('function createStationCluster(')
+const groupingEnd = source.indexOf('\nfunction tilePointsInExtent', groupingStart)
+const groupingCode = ts.transpileModule(source.slice(groupingStart, groupingEnd), {
+  compilerOptions: { target: ts.ScriptTarget.ES2022 },
+}).outputText
+context.DEFAULT_WORLD_RESOLUTION = 31250
+context.WORLD_EXTENT = [-180, -90, 180, 90]
+vm.runInContext(groupingCode, context)
+const points = context.buildCloud()
+for (const [step, expected] of [[0, [20, 1]], [1, [10, 10, 1]], [2, [5, 5, 5, 5, 1]], [3, Array(21).fill(1)]]) {
+  const groupSize = context.clusterGroupSize(context.DEFAULT_WORLD_RESOLUTION / 2 ** step)
+  const groups = Array.from(context.groupStationPoints(points, groupSize))
+  assert.deepEqual(groups.map(group => group.get('count')), expected)
+  assert.deepEqual(groups.flatMap(group => Array.from(group.get('features'))), points)
+}
+console.log('PASS: zoom levels group distinct stations in batches of 20, 10, 5, then 1')

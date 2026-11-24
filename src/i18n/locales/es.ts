@@ -176,6 +176,7 @@ export default {
     "demoNote": "Conectado al catálogo en línea. Las exportaciones filtradas obtienen 250 registros por página, pueden cancelarse y usan los mismos datos que la vista previa."
   },
   "map": {
+    "clusterToggle": "Agrupar estaciones",
     "clusterCount": "{count} estaciones",
     "filteredSnapshot": "Mapa filtrado: instantánea del {date} · {count} estaciones en esta vista",
     "overviewSnapshot": "Vista general de estaciones, instantánea: {date}",

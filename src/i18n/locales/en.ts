@@ -287,6 +287,7 @@ export default {
     "email": "Email"
   },
   "map": {
+    "clusterToggle": "Cluster stations",
     "clusterCount": "{count} stations",
     "filteredSnapshot": "Filtered map snapshot: {date} · {count} stations in this view",
     "overviewSnapshot": "Station overview, snapshot: {date}",

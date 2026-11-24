@@ -287,6 +287,7 @@ export default {
     "email": "邮箱"
   },
   "map": {
+    "clusterToggle": "站点聚合",
     "clusterCount": "{count} 个站点",
     "filteredSnapshot": "筛选地图快照：{date} · 当前视野 {count} 个站点",
     "overviewSnapshot": "站点概览，快照更新：{date}",
