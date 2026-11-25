@@ -241,6 +241,36 @@ assert.deepEqual(Array.from(exactArea.features, station => station.id), ['0-test
 console.log('PASS: area results retain table fields and apply exact IDs without single-station requests')
 
 maps.clearMapCache(); api.clearWigosCache()
+const areaStatusStations = [
+  { ...area.features[0], id: 'open' },
+  { ...area.features[0], id: 'closed', time: { interval: ['2020-01-01', '2021-01-01'] } },
+  { ...area.features[0], id: 'silent', properties: {
+    ...area.features[0].properties,
+    observations: [{ programAffiliations: [{ reportingStatus: { id: 'nonReporting' } }] }],
+  } },
+]
+let areaStatusRequests = 0
+globalThis.fetch = async url => {
+  areaStatusRequests++
+  assert.equal(new URL(url).searchParams.has(api.REPORTING_STATUS_FIELD), false)
+  return new Response(JSON.stringify({
+    features: areaStatusStations, numberMatched: areaStatusStations.length, numberReturned: areaStatusStations.length,
+  }))
+}
+const areaWithStatuses = async reportingStatuses => {
+  const progressIds = []
+  const result = await maps.loadFilteredMap({ ...areaQuery, reportingStatuses }, delta => {
+    progressIds.push(...delta.map(feature => feature.id))
+  }, { areaRows: true })
+  assert.deepEqual(progressIds, Array.from(result.features, feature => feature.id))
+  return progressIds
+}
+assert.deepEqual(await areaWithStatuses(['operational']), ['open'])
+assert.deepEqual(await areaWithStatuses(['closed', 'nonReporting']), ['closed', 'silent'])
+assert.deepEqual(await areaWithStatuses([]), ['open', 'closed', 'silent'])
+assert.equal(areaStatusRequests, 1)
+
+maps.clearMapCache(); api.clearWigosCache()
 const elevations = [
   { ...sample, id: 'below', geometry: { type: 'Point', coordinates: [0.5, 0.5, 99] } },
   { ...sample, id: 'at-min', geometry: { type: 'Point', coordinates: [0.5, 0.5, 100] } },

@@ -7,14 +7,14 @@
       <div ref="basemapEl" class="oscar-basemap" aria-hidden="true"></div>
       <div ref="mapEl" class="map oscar-ol-map"></div>
       <div ref="areaPinEl" class="area-station-pin" aria-hidden="true">
-        <i v-if="activeAreaStation" class="el-icon-location" :style="{ color: domainColors[activeAreaStation.domain] }">
-          <LocationFilled />
-        </i>
+        <svg v-if="activeAreaStation" viewBox="0 0 256 240" :style="{ color: domainColors[activeAreaStation.domain] }">
+          <path :d="areaPinPath" />
+        </svg>
       </div>
       <div ref="areaHoverPinEl" class="area-station-pin" aria-hidden="true">
-        <i v-if="hoveredAreaStation" class="el-icon-location" :style="{ color: domainColors[hoveredAreaStation.domain] }">
-          <LocationFilled />
-        </i>
+        <svg v-if="hoveredAreaStation" viewBox="0 0 256 240" :style="{ color: domainColors[hoveredAreaStation.domain] }">
+          <path :d="areaPinPath" />
+        </svg>
       </div>
 
       <section v-if="selectedArea" v-show="!drawingArea" class="area-results" :aria-label="areaTitle" :aria-busy="loading">
@@ -110,6 +110,14 @@
           <span class="oscar-legend__dot" :style="{ background: item.color }"></span>
           {{ $t(item.labelKey) }}
         </div>
+        <div class="oscar-legend__statuses">
+          <div v-for="item in statusSymbols" :key="item.status" class="oscar-legend__item">
+            <svg viewBox="0 0 16 16" aria-hidden="true" class="oscar-legend__symbol">
+              <path :d="item.path" fill="#808080" fill-rule="evenodd" />
+            </svg>
+            {{ t('search.advanced.' + item.id) }}
+          </div>
+        </div>
       </div>
 
       <div class="oscar-map-tools">
@@ -168,7 +176,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
-import { Crop, Help, Location, LocationFilled, MapLocation } from '@element-plus/icons-vue'
+import { Crop, Help, Location, MapLocation } from '@element-plus/icons-vue'
 import { filterCountry, filterType, filterPrograms, filterStatuses, focusedStation } from '../stores/quickFilter'
 import Map from 'ol/Map'
 import Overlay from 'ol/Overlay'
@@ -192,10 +200,10 @@ import Point from 'ol/geom/Point'
 import Polygon, { fromExtent } from 'ol/geom/Polygon'
 import LineString from 'ol/geom/LineString'
 import { fromLonLat, getPointResolution, toLonLat, transformExtent } from 'ol/proj'
-import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style'
+import { Circle as CircleStyle, Fill, Icon, Stroke, Style } from 'ol/style'
 import Control from 'ol/control/Control'
 import { defaults as defaultControls } from 'ol/control/defaults'
-import type { Station, StationDomain } from '../data/stations'
+import type { Station, StationDomain, StationStatus } from '../data/stations'
 import { domainColors } from '../data/stations'
 import { downloadCatalogueRecord } from '../utils/catalogueDownload'
 import { useI18n } from 'vue-i18n'
@@ -212,6 +220,7 @@ import {
   featureEstablished,
   featureProgramIds,
   featureStatus,
+  areaReportingStatuses,
   featureToStation,
   type WigosFeature,
   featureToRow,
@@ -249,6 +258,19 @@ const legend: { labelKey: string; domain: StationDomain; color: string }[] = [
   { labelKey: 'map.legend.subsurface', domain: 'subsurface', color: domainColors.subsurface },
   { labelKey: 'map.legend.lake', domain: 'lake', color: domainColors.lake },
 ]
+const statusSymbols = [
+  { status: 'Operational', id: 'operational', path: 'M8 2.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 1 0 0-11Z' },
+  { status: 'Partly operational', id: 'partlyOperational', path: 'M8 2 14 13H2Z' },
+  { status: 'Closed', id: 'closed', path: 'M4 2 8 6 12 2 14 4 10 8 14 12 12 14 8 10 4 14 2 12 6 8 2 4Z' },
+  { status: 'Silent', id: 'nonReporting', path: 'M8 2a6 6 0 1 0 0 12 6 6 0 1 0 0-12ZM8 4a4 4 0 1 1 0 8 4 4 0 1 1 0-8Z' },
+  { status: 'Unknown', id: 'unknown', path: 'M8 2a6 6 0 1 0 0 12 6 6 0 1 0 0-12ZM8 4a4 4 0 0 1 3.5 6L6 4.5A4 4 0 0 1 8 4ZM4.5 6l5.5 5.5A4 4 0 0 1 4.5 6Z' },
+] as const satisfies readonly { status: StationStatus; id: string; path: string }[]
+
+function statusSymbolUrl(symbol: { path: string }, color: string) {
+  return 'data:image/svg+xml,' + encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="${symbol.path}" fill="${color}" fill-rule="evenodd" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round" paint-order="stroke"/></svg>`,
+  )
+}
 
 const mapEl = ref<HTMLDivElement | null>(null)
 const basemapEl = ref<HTMLDivElement | null>(null)
@@ -325,7 +347,10 @@ const clusterSource = new VectorSource({ wrapX: false })
 const clusterLayer = new VectorLayer({
   source: clusterSource,
   visible: false,
-  style: feature => tileStyles[feature.get('domain') as StationDomain],
+  style: feature => {
+    const station = feature.get('count') === 1 ? feature.get('features')?.[0] : undefined
+    return station?.getStyle() ?? tileStyles[feature.get('domain') as StationDomain]
+  },
 })
 let tileClusterRevision = 0
 let clusterKey = ''
@@ -345,6 +370,12 @@ const overviewTileSource = new VectorTileSource({
 })
 let tileSource = overviewTileSource
 const tileStyles = Object.fromEntries(Object.entries(domainColors).map(([domain, color]) => [domain, dotStyle(color, 2.5)])) as Record<StationDomain, Style>
+const stationStatusStyles = new globalThis.Map<StationDomain, globalThis.Map<StationStatus, Style>>(
+  legend.map(({ domain, color }) => [domain, new globalThis.Map(statusSymbols.map(symbol => [
+    symbol.status,
+    new Style({ image: new Icon({ src: statusSymbolUrl(symbol, color), width: 11, height: 11 }) }),
+  ]))]),
+)
 const stationTiles = new VectorTileLayer({
   source: tileSource,
   visible: false,
@@ -533,6 +564,7 @@ const activeAreaStation = shallowRef<Station>()
 const hoveredAreaStation = shallowRef<Station>()
 const areaPinEl = ref<HTMLDivElement>()
 const areaHoverPinEl = ref<HTMLDivElement>()
+const areaPinPath = 'M127.99414,15.9971a88.1046,88.1046,0,0,0-88,88c0,75.29688,80,132.17188,83.40625,134.55469a8.023,8.023,0,0,0,9.1875,0c3.40625-2.38281,83.40625-59.25781,83.40625-134.55469A88.10459,88.10459,0,0,0,127.99414,15.9971ZM128,72a32,32,0,1,1-32,32A31.99909,31.99909,0,0,1,128,72Z'
 const areaPinOptions = {
   className: 'oscar-area-pin-overlay',
   positioning: 'bottom-center' as const,
@@ -548,7 +580,7 @@ const areaStations = computed(() => selectedArea.value ? liveFeatures.value.flat
   const station = featureToStation(feature)
   if (!station) return []
   const row = featureToRow(feature, true)
-  const status = feature.time?.interval?.some(value => value && value !== '..') ? row.status : ''
+  const status = areaReportingStatuses(feature).join(', ')
   return [{ station, row, status }]
 }).sort((a, b) => (areaAscending.value ? 1 : -1) *
   (a.station.name.localeCompare(b.station.name, locale.value) || a.station.wigosId.localeCompare(b.station.wigosId))) : [])
@@ -719,14 +751,18 @@ function dotStyle(color: string, radius = 2) {
 }
 
 function buildCloud(): Feature[] {
-  const stations = props.visibleStations ?? liveFeatures.value.flatMap(f => {
+  const selectedStatuses = props.mapQuery?.reportingStatuses
+  const stations = props.visibleStations?.map(station => ({ station, status: station.status })) ?? liveFeatures.value.flatMap(f => {
     const station = featureToStation(f)
-    return station ? [station] : []
+    if (!station) return []
+    const statuses = selectedArea.value || !f.mapSummary ? areaReportingStatuses(f) : []
+    const status = statusSymbols.find(symbol => selectedStatuses?.includes(symbol.id) && statuses.includes(symbol.status))?.status ?? statuses[0]
+    return [{ station, status }]
   })
-  return stations.map(s => {
+  return stations.map(({ station: s, status }) => {
     const feature = new Feature({ geometry: new Point(mapCoordinate(s.lon, s.lat)), station: s, domain: s.domain,
       wigosId: props.visibleStations ? undefined : s.wigosId })
-    feature.setStyle(tileStyles[s.domain])
+    feature.setStyle((status && stationStatusStyles.get(s.domain)?.get(status)) || tileStyles[s.domain])
     return feature
   })
 }
@@ -1663,7 +1699,7 @@ function flyToFocusedStation(focus = focusedStation.value) {
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid #dce6ef;
   color: #35536e;
-  font-size: 12px;
+  font-size: 14px;
   min-width: 128px;
   box-shadow: 0 2px 10px rgba(0, 91, 171, 0.08);
 }
@@ -1681,9 +1717,19 @@ function flyToFocusedStation(focus = focusedStation.value) {
 }
 
 .oscar-legend__dot {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
+}
+
+.oscar-legend__statuses {
+  margin-top: 7px;
+  padding-top: 3px;
+  border-top: 1px solid #dce6ef;
+}
+.oscar-legend__symbol {
+  width: 14px;
+  height: 14px;
 }
 
 .oscar-map-tools {
@@ -1764,8 +1810,7 @@ function flyToFocusedStation(focus = focusedStation.value) {
 .area-results__locate svg { width: 17px; height: 17px; }
 .area-results__locate[aria-pressed='true'] { border-color: #005a9f; background: #e6f2ff; }
 .oscar-ol-wrap :deep(.oscar-area-pin-overlay) { pointer-events: none !important; }
-.area-station-pin i { display: flex; }
-.area-station-pin svg { width: 32px; height: 32px; display: block; stroke: #fff; stroke-width: 45; paint-order: stroke; filter: drop-shadow(0 1px 2px #25455a70); }
+.area-station-pin svg { width: 36px; height: 34px; display: block; overflow: visible; fill: currentColor; stroke: #fff; stroke-width: 10; paint-order: stroke; filter: drop-shadow(0 1px 2px #25455a70); }
 .area-results__list dl { display: grid; gap: 3px; margin: 6px 0 0; font-size: 12px; }
 .area-results__list dl div { display: flex; align-items: baseline; gap: 5px; }
 .area-results__list dt { flex: 0 0 auto; font-weight: 600; }
@@ -1854,6 +1899,9 @@ function flyToFocusedStation(focus = focusedStation.value) {
   background: transparent;
   color: #687e90;
   font-size: 10px;
+}
+.oscar-legend__statuses .oscar-legend__item{
+  gap: 5px;
 }
 </style>
 

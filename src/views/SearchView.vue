@@ -2,7 +2,13 @@
   <div class="station-browser">
     <div class="criteria-column">
     <aside class="criteria-card">
-      <header><h2>{{ $t('search.criteria') }}</h2><el-button size="small" @click="reset">{{ $t('common.reset') }}</el-button></header>
+      <header>
+        <h2>{{ $t('search.criteria') }}</h2>
+        <div class="criteria-actions">
+          <el-button native-type="button" size="small" @click="reset">{{ $t('common.reset') }}</el-button>
+          <el-button type="primary" native-type="submit" form="search-elevation" size="small">{{ t('common.search') }}</el-button>
+        </div>
+      </header>
       <label class="criterion"><span>{{ $t('search.keyword') }}</span><el-input v-model="keyword" clearable @focus="keywordFocused = true" @blur="keywordFocused = false" @keyup.enter="submitKeyword" :placeholder="$t('search.keywordPlaceholder')" :prefix-icon="Search" /></label>
       <p v-if="keywordTooShort" role="status">{{ t('home.searchMinLength') }}</p>
       <label v-for="field in fields" :key="field.key" class="criterion">
@@ -10,6 +16,14 @@
         <el-select v-model="filters[field.key]" multiple collapse-tags collapse-tags-tooltip filterable clearable :placeholder="$t('common.all')" :aria-label="field.label">
           <el-option v-for="option in field.options" :key="option.value" :label="option.label" :value="option.value" />
         </el-select>
+      </label>
+      <label class="criterion">
+        <span>{{ t('search.advanced.approval') }}</span>
+        <el-select v-model="approvalStatus" :aria-label="t('search.advanced.approval')">
+          <el-option value="all" :label="t('common.all')" />
+          <el-option v-for="status in approvalStatuses" :key="status" :value="status" :label="t('search.advanced.' + status)" />
+        </el-select>
+        <small v-if="approvalStatus !== 'all'" role="status">{{ t('search.advanced.approvalUnavailable') }}</small>
       </label>
       <fieldset class="advanced-filter">
         <legend>{{ t('search.advanced.reportingStatus') }}</legend>
@@ -22,25 +36,9 @@
                    :aria-label="t('search.advanced.reportingStatus')">
           <el-option v-for="status in visibleStatuses" :key="status" :value="status" :label="t('search.advanced.' + status)" />
         </el-select>
+        <p v-if="statusSource === 'assessed'" role="status">{{ t('search.advanced.assessedUnavailable') }}</p>
       </fieldset>
-      <label class="criterion">
-        <span>{{ t('search.advanced.approval') }}</span>
-        <el-select v-model="approvalStatus" :aria-label="t('search.advanced.approval')">
-          <el-option value="all" :label="t('common.all')" />
-          <el-option v-for="status in approvalStatuses" :key="status" :value="status" :label="t('search.advanced.' + status)" />
-        </el-select>
-        <small v-if="approvalStatus !== 'all'" role="status">{{ t('search.advanced.approvalUnavailable') }}</small>
-      </label>
-      <form class="range-filter" @submit.prevent="applyRanges">
-        <fieldset class="advanced-filter">
-          <legend>{{ t('search.advanced.coordinates') }}</legend>
-          <div class="range-filter__grid">
-            <label v-for="field in coordinateFields" :key="field.key">
-              <span>{{ t('search.advanced.' + field.key) }}</span>
-              <input v-model="rangeDraft[field.key]" type="number" step="any" :min="-field.max" :max="field.max" />
-            </label>
-          </div>
-        </fieldset>
+      <form id="search-elevation" class="range-filter" @submit.prevent="applyRanges">
         <fieldset class="advanced-filter">
           <legend>{{ t('search.advanced.elevation') }}</legend>
           <div class="range-filter__grid">
@@ -49,10 +47,6 @@
           </div>
         </fieldset>
         <p v-if="invalidRange" role="alert">{{ t('search.advanced.invalidRange') }}</p>
-        <div class="range-filter__actions">
-          <el-button type="primary" native-type="submit" size="small">{{ t('common.search') }}</el-button>
-          <!-- <el-button native-type="button" size="small" @click="resetRanges">{{ t('common.reset') }}</el-button> -->
-        </div>
       </form>
     </aside>
     <section v-if="mode === 'map'" class="area-controls">
@@ -60,14 +54,20 @@
         <el-button :type="mapWidget?.drawingArea ? 'default' : 'primary'" :disabled="!mapWidget" @click="toggleAreaDrawing">
           {{ t(mapWidget?.drawingArea ? 'map.cancelAreaDrawing' : mapWidget?.selectedArea ? 'map.reselectArea' : 'map.selectArea') }}
         </el-button>
-        <el-button v-if="mapWidget?.selectedArea" @click="mapWidget?.setSelectedArea()">{{ t('map.clearArea') }}</el-button>
       </div>
       <p v-if="mapWidget?.drawingArea" role="status">{{ t('map.areaDrawHint') }}</p>
       <form v-if="mapWidget?.selectedArea" class="area-controls__coordinates" @submit.prevent="applyArea">
-        <label>{{ t('map.areaSouthwest') }} <input v-model="southwest" required autocomplete="off" /></label>
-        <label>{{ t('map.areaNortheast') }} <input v-model="northeast" required autocomplete="off" /></label>
+        <div class="range-filter__grid">
+          <label><span>{{ t('search.advanced.longitudeFrom') }}</span><input v-model="areaCoordinates.west" type="number" step="any" required /></label>
+          <label><span>{{ t('search.advanced.longitudeTo') }}</span><input v-model="areaCoordinates.east" type="number" step="any" required /></label>
+          <label><span>{{ t('search.advanced.latitudeFrom') }}</span><input v-model="areaCoordinates.south" type="number" step="any" required /></label>
+          <label><span>{{ t('search.advanced.latitudeTo') }}</span><input v-model="areaCoordinates.north" type="number" step="any" required /></label>
+        </div>
         <p v-if="invalidArea" role="alert">{{ t('map.areaInvalid') }}</p>
-        <el-button native-type="submit" size="small">{{ t('map.applyArea') }}</el-button>
+        <div class="area-controls__actions" style="justify-content: space-between;">
+          <el-button size="small" v-if="mapWidget?.selectedArea" @click="mapWidget?.setSelectedArea()">{{ t('map.clearArea') }}</el-button>
+          <el-button native-type="submit" type="primary" size="small">{{ t('map.applyArea') }}</el-button>
+        </div>
       </form>
     </section>
     </div>
@@ -162,14 +162,14 @@ const keywordTooShort = computed(() => keywordFocused.value && Array.from(keywor
 const mode = ref<'map' | 'list'>(route.query.mode === 'list' ? 'list' : 'map')
 const mapOpened = ref(mode.value === 'map')
 const mapWidget = ref<InstanceType<typeof OscarMap>>()
-const southwest = ref('')
-const northeast = ref('')
+const areaCoordinates = reactive({ west: '', south: '', east: '', north: '' })
 const invalidArea = ref(false)
 
 watch(() => mapWidget.value?.selectedArea, area => {
-  const format = (lon: number, lat: number) => `${lon.toFixed(6)}, ${lat.toFixed(6)}`
-  southwest.value = area ? format(area[0], area[1]) : ''
-  northeast.value = area ? format(area[2], area[3]) : ''
+  areaCoordinates.west = area ? area[0].toFixed(6) : ''
+  areaCoordinates.south = area ? area[1].toFixed(6) : ''
+  areaCoordinates.east = area ? area[2].toFixed(6) : ''
+  areaCoordinates.north = area ? area[3].toFixed(6) : ''
   invalidArea.value = false
 })
 
@@ -178,9 +178,9 @@ function toggleAreaDrawing() {
 }
 
 function applyArea() {
-  const parts = [...southwest.value.split(','), ...northeast.value.split(',')].map(value => value.trim())
+  const parts = [areaCoordinates.west, areaCoordinates.south, areaCoordinates.east, areaCoordinates.north]
   const [west, south, east, north] = parts.map(Number)
-  invalidArea.value = parts.length !== 4 || parts.some(value => !value) ||
+  invalidArea.value = parts.some(value => String(value).trim() === '') ||
     west === undefined || south === undefined || east === undefined || north === undefined ||
     ![west, south, east, north].every(Number.isFinite) ||
     west < -180 || east > 180 || south < -85 || north > 85 || west >= east || south >= north
@@ -201,27 +201,18 @@ const declaredStatuses = ['operational', 'partlyOperational', 'unknown', 'nonRep
 const visibleStatuses = computed(() => statusSource.value === 'declared' ? declaredStatuses : declaredStatuses.slice(0, -1))
 const approvalStatuses = ['approved', 'declined', 'pending']
 const approvalStatus = ref('all')
-const coordinateFields = [
-  { key: 'longitudeFrom', max: 180 }, { key: 'longitudeTo', max: 180 },
-  { key: 'latitudeFrom', max: 90 }, { key: 'latitudeTo', max: 90 },
-] as const
-const emptyRangeDraft = { longitudeFrom: '', longitudeTo: '', latitudeFrom: '', latitudeTo: '', minElevation: '', maxElevation: '' }
+const emptyRangeDraft = { minElevation: '', maxElevation: '' }
 const rangeDraft = reactive({ ...emptyRangeDraft })
-const appliedRange = shallowRef<Pick<FacilitySearchParams, 'bbox' | 'minElevation' | 'maxElevation'>>({})
+const appliedRange = shallowRef<Pick<FacilitySearchParams, 'minElevation' | 'maxElevation'>>({})
 const invalidRange = ref(false)
 
 function applyRanges() {
-  const { longitudeFrom, longitudeTo, latitudeFrom, latitudeTo, minElevation, maxElevation } = rangeDraft
-  const hasBounds = [longitudeFrom, longitudeTo, latitudeFrom, latitudeTo].some(value => value !== '')
-  const west = longitudeFrom === '' ? -180 : Number(longitudeFrom)
-  const east = longitudeTo === '' ? 180 : Number(longitudeTo)
-  const south = latitudeFrom === '' ? -90 : Number(latitudeFrom)
-  const north = latitudeTo === '' ? 90 : Number(latitudeTo)
+  const { minElevation, maxElevation } = rangeDraft
   const minimum = minElevation === '' ? undefined : Number(minElevation)
   const maximum = maxElevation === '' ? undefined : Number(maxElevation)
-  invalidRange.value = west >= east || south >= north || (minimum !== undefined && maximum !== undefined && minimum > maximum)
+  invalidRange.value = minimum !== undefined && maximum !== undefined && minimum > maximum
   if (invalidRange.value) return
-  appliedRange.value = { bbox: hasBounds ? [west, south, east, north] : undefined, minElevation: minimum, maxElevation: maximum }
+  appliedRange.value = { minElevation: minimum, maxElevation: maximum }
 }
 const rows = ref<Station[]>([])
 const total = ref(0)
@@ -277,7 +268,6 @@ const activeCriteria = computed(() =>
     ...fields.value.flatMap(({ key, options }) =>
       filters[key].map((value) => options.find((option) => option.value === value)?.label ?? value)),
     ...(statusSource.value === 'declared' ? reportingStatuses.value.map(status => t('search.advanced.' + status)) : []),
-    ...(appliedRange.value.bbox ? [t('search.advanced.coordinates') + ' ' + appliedRange.value.bbox.join(', ')] : []),
     ...(['minElevation', 'maxElevation'] as const).flatMap(key => {
       const value = appliedRange.value[key]
       return value === undefined ? [] : [t('search.advanced.' + key) + ' ' + value + ' m']
@@ -481,7 +471,7 @@ watch([rows, total, activeCriteria], () => {
 .criteria-card, .results-card { background: white; border: 1px solid #e0e8ec; border-radius: 8px; padding: 20px; min-width: 0; }
 .criteria-card { max-height: calc(100vh - 190px); overflow-y: auto; }
 .criteria-column { min-width: 0; }
-.advanced-filter { min-width: 0; margin: 0 0 12px; padding: 8px; }
+.advanced-filter { min-width: 0; margin: 12px 0 12px; padding: 8px; }
 .advanced-filter legend { padding: 0 4px; font-size: 13px; }
 .advanced-filter p, .criterion small, .range-filter p { margin: 6px 0 0; font-size: 12px; }
 .status-source { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; font-size: 12px; }
@@ -490,15 +480,13 @@ watch([rows, total, activeCriteria], () => {
 .range-filter__grid label { display: grid; gap: 4px; font-size: 12px; }
 .range-filter__grid input { box-sizing: border-box; width: 100%; padding: 5px; border: 1px solid #c4d2de; border-radius: 4px; }
 .range-filter [role='alert'] { color: #a12727; margin-bottom: 6px; }
-.range-filter__actions { display: flex; gap: 8px; }
-.range-filter__actions :deep(.el-button + .el-button) { margin-left: 0; }
+.criteria-actions { display: flex; justify-content: flex-end; gap: 8px; margin-left: auto; }
+.criteria-actions :deep(.el-button + .el-button) { margin-left: 0; }
 .area-controls { margin-top: 12px; padding: 14px; background: #fff; border: 1px solid #e0e8ec; border-radius: 8px; }
 .area-controls__actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .area-controls__actions :deep(.el-button + .el-button) { margin-left: 0; }
 .area-controls p { margin: 8px 0 0; font-size: 12px; }
 .area-controls__coordinates { display: grid; gap: 8px; margin-top: 12px; }
-.area-controls__coordinates label { display: grid; gap: 4px; font-size: 12px; }
-.area-controls__coordinates input { min-width: 0; padding: 6px 8px; border: 1px solid #c4d2de; border-radius: 4px; color: #253b50; }
 .area-controls__coordinates button { justify-self: start; }
 .area-controls p[role='alert'] { color: #a12727; }
 header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

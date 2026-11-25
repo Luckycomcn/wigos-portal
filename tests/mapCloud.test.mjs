@@ -4,6 +4,7 @@ import vm from 'node:vm'
 import ts from 'typescript'
 import Feature from 'ol/Feature.js'
 import Point from 'ol/geom/Point.js'
+import Style from 'ol/style/Style.js'
 
 const source = await readFile('src/components/OscarMap.vue', 'utf8')
 const start = source.indexOf('function buildCloud(')
@@ -16,6 +17,10 @@ const context = {
   props: {},
   liveFeatures: { value: stations },
   featureToStation: station => station,
+  selectedArea: { value: undefined },
+  areaReportingStatuses: station => station.statuses ?? [],
+  statusSymbols: [{ id: 'nonReporting', status: 'Silent' }],
+  stationStatusStyles: new Map(),
   Feature,
   Point,
   mapCoordinate: (lon, lat) => [lon, lat],
@@ -31,6 +36,18 @@ for (const visibleStations of [undefined, stations]) {
   assert.ok(features.every(feature => feature.get('count') === undefined))
 }
 console.log('PASS: filtered and provided stations render individually, even at identical coordinates')
+
+const operationalStyle = new Style()
+const silentStyle = new Style()
+context.stationStatusStyles.set('land-ocean', new Map([['Operational', operationalStyle], ['Silent', silentStyle]]))
+context.props.visibleStations = undefined
+context.props.mapQuery = { reportingStatuses: ['nonReporting'] }
+context.selectedArea.value = [0, 0, 2, 2]
+stations[0].mapSummary = true
+stations[0].statuses = ['Operational', 'Silent']
+assert.equal(context.buildCloud()[0].getStyle(), silentStyle)
+context.props.mapQuery = undefined
+assert.equal(context.buildCloud()[0].getStyle(), operationalStyle)
 
 const groupingStart = source.indexOf('function createStationCluster(')
 const groupingEnd = source.indexOf('\nfunction tilePointsInExtent', groupingStart)

@@ -123,6 +123,10 @@ export default {
   },
   "search": {
     "advanced": {
+      "longitudeFrom": "Longitude from",
+      "longitudeTo": "Longitude to",
+      "latitudeFrom": "Latitude from",
+      "latitudeTo": "Latitude to",
       "reportingStatus": "Reporting status",
       "declared": "Declared",
       "assessed": "Assessed",
@@ -137,15 +141,10 @@ export default {
       "declined": "Declined",
       "pending": "Pending",
       "approvalUnavailable": "The WMO catalogue provides no approval status data. This selection is not applied to results.",
-      "coordinates": "Geographic coordinates",
-      "longitudeFrom": "Longitude from",
-      "longitudeTo": "Longitude to",
-      "latitudeFrom": "Latitude from",
-      "latitudeTo": "Latitude to",
       "elevation": "Elevation (m)",
       "minElevation": "Minimum elevation",
       "maxElevation": "Maximum elevation",
-      "invalidRange": "Check the coordinate and elevation bounds."
+      "invalidRange": "Check the minimum and maximum elevation."
     },
     "criteria": "Criteria",
     "keyword": "Keyword / WIGOS station identifier",
@@ -348,10 +347,10 @@ export default {
     "basemapMissingKey": "Ask your administrator to configure this basemap’s credentials.",
     "basemapLoadError": "Could not load this basemap. Check the network and service configuration.",
     "legend": {
-      "air": "air",
-      "landOcean": "land or ocean surface",
-      "subsurface": "sub-surface",
-      "lake": "lake or river"
+      "air": "Air",
+      "landOcean": "Land or ocean surface",
+      "subsurface": "Sub-surface",
+      "lake": "Lake or river"
     }
   },
   "about": {

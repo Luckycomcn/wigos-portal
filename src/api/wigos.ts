@@ -599,6 +599,33 @@ function cqlLiteral(value: string): string {
 
 export const REPORTING_STATUS_FIELD = 'observations.programAffiliations.reportingStatus.id'
 
+const reportingStatusLabels: Record<string, StationStatus> = {
+  operational: 'Operational',
+  partlyOperational: 'Partly operational',
+  unknown: 'Unknown',
+  nonReporting: 'Silent',
+  closed: 'Closed',
+}
+
+export function areaReportingStatuses(feature: WigosFeature): StationStatus[] {
+  const statuses = new Set<StationStatus>()
+  for (const observation of feature.properties.observations ?? []) {
+    for (const affiliation of observation.programAffiliations ?? []) {
+      const status = reportingStatusLabels[affiliation.reportingStatus?.id ?? '']
+      if (status) statuses.add(status)
+    }
+  }
+  if (statuses.size) return [...statuses]
+  const hasInterval = feature.time?.interval?.some(value => value && value !== '..')
+  return [hasInterval ? featureStatus(feature) : 'Unknown']
+}
+
+export function matchesAreaReportingStatus(feature: WigosFeature, ids: string[]) {
+  return !ids.length || areaReportingStatuses(feature).some(status =>
+    ids.some(id => reportingStatusLabels[id] === status),
+  )
+}
+
 export function hasElevationFilter(query: FacilitySearchParams) {
   return query.minElevation !== undefined || query.maxElevation !== undefined
 }

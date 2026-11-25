@@ -116,6 +116,10 @@ export default {
   },
   "search": {
     "advanced": {
+      "longitudeFrom": "Longitude minimale",
+      "longitudeTo": "Longitude maximale",
+      "latitudeFrom": "Latitude minimale",
+      "latitudeTo": "Latitude maximale",
       "reportingStatus": "Statut de déclaration",
       "declared": "Déclaré",
       "assessed": "Évalué",
@@ -130,15 +134,10 @@ export default {
       "declined": "Refusé",
       "pending": "En attente",
       "approvalUnavailable": "Le catalogue de l’OMM ne fournit pas de statut d’approbation. Cette sélection ne filtre pas les résultats.",
-      "coordinates": "Coordonnées géographiques",
-      "longitudeFrom": "Longitude minimale",
-      "longitudeTo": "Longitude maximale",
-      "latitudeFrom": "Latitude minimale",
-      "latitudeTo": "Latitude maximale",
       "elevation": "Altitude (m)",
       "minElevation": "Altitude minimale",
       "maxElevation": "Altitude maximale",
-      "invalidRange": "Vérifiez les limites des coordonnées et de l’altitude."
+      "invalidRange": "Vérifiez les limites d’altitude."
     },
     "criteria": "Critères",
     "keyword": "Mot-clé / identifiant de station WIGOS",
@@ -237,10 +236,10 @@ export default {
     "basemapMissingKey": "Demandez à votre administrateur de configurer les identifiants de ce fond de carte.",
     "basemapLoadError": "Impossible de charger ce fond de carte. Vérifiez le réseau et la configuration du service.",
     "legend": {
-      "air": "air",
-      "landOcean": "surface terrestre ou océanique",
-      "subsurface": "sous la surface",
-      "lake": "lac ou rivière"
+      "air": "Air",
+      "landOcean": "Surface terrestre ou océanique",
+      "subsurface": "Sous la surface",
+      "lake": "Lac ou rivière"
     }
   },
   "menu": {

@@ -123,6 +123,10 @@ export default {
   },
   "search": {
     "advanced": {
+      "longitudeFrom": "起始经度",
+      "longitudeTo": "结束经度",
+      "latitudeFrom": "起始纬度",
+      "latitudeTo": "结束纬度",
       "reportingStatus": "申报或评估状态",
       "declared": "申报",
       "assessed": "评估",
@@ -137,15 +141,10 @@ export default {
       "declined": "已拒绝",
       "pending": "待审批",
       "approvalUnavailable": "当前 WMO 目录未提供审批数据，此选择暂未参与筛选。",
-      "coordinates": "地理坐标",
-      "longitudeFrom": "起始经度",
-      "longitudeTo": "结束经度",
-      "latitudeFrom": "起始纬度",
-      "latitudeTo": "结束纬度",
       "elevation": "海拔（米）",
       "minElevation": "最低海拔",
       "maxElevation": "最高海拔",
-      "invalidRange": "请检查经纬度范围和海拔上下限。"
+      "invalidRange": "请检查海拔上下限。"
     },
     "criteria": "筛选条件",
     "keyword": "关键词 / WIGOS 台站标识符",
