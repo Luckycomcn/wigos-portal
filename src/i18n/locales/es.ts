@@ -115,6 +115,30 @@ export default {
     }
   },
   "search": {
+    "advanced": {
+      "longitudeFrom": "Longitud mínima",
+      "longitudeTo": "Longitud máxima",
+      "latitudeFrom": "Latitud mínima",
+      "latitudeTo": "Latitud máxima",
+      "reportingStatus": "Estado de notificación",
+      "declared": "Declarado",
+      "assessed": "Evaluado",
+      "operational": "Operativo",
+      "partlyOperational": "Parcialmente operativo",
+      "unknown": "Desconocido",
+      "nonReporting": "Silencioso",
+      "closed": "Cerrado",
+      "assessedUnavailable": "El catálogo de la OMM no proporciona el estado evaluado. Esta selección no filtra los resultados.",
+      "approval": "Estado de aprobación del programa",
+      "approved": "Aprobado",
+      "declined": "Rechazado",
+      "pending": "Pendiente",
+      "approvalUnavailable": "El catálogo de la OMM no proporciona el estado de aprobación. Esta selección no filtra los resultados.",
+      "elevation": "Altitud (m)",
+      "minElevation": "Altitud mínima",
+      "maxElevation": "Altitud máxima",
+      "invalidRange": "Compruebe los límites de altitud."
+    },
     "criteria": "Criterios",
     "keyword": "Palabra clave / identificador de estación WIGOS",
     "keywordPlaceholder": "Buscar por nombre de estación o identificador WIGOS...",
@@ -212,10 +236,10 @@ export default {
     "basemapMissingKey": "Solicite al administrador que configure las credenciales de este mapa base.",
     "basemapLoadError": "No se pudo cargar este mapa base. Compruebe la red y la configuración del servicio.",
     "legend": {
-      "air": "aire",
-      "landOcean": "superficie terrestre u oceánica",
-      "subsurface": "subsuperficie",
-      "lake": "lago o río"
+      "air": "Aire",
+      "landOcean": "Superficie terrestre u oceánica",
+      "subsurface": "Subsuperficie",
+      "lake": "Lago o río"
     }
   },
   "menu": {

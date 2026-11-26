@@ -6,6 +6,16 @@
       <div ref="amapEl" class="oscar-amap" :style="{ visibility: basemap === 'amap' ? 'visible' : 'hidden' }"></div>
       <div ref="basemapEl" class="oscar-basemap" aria-hidden="true"></div>
       <div ref="mapEl" class="map oscar-ol-map"></div>
+      <div ref="areaPinEl" class="area-station-pin" aria-hidden="true">
+        <svg v-if="activeAreaStation" viewBox="0 0 256 240" :style="{ color: domainColors[activeAreaStation.domain] }">
+          <path :d="areaPinPath" />
+        </svg>
+      </div>
+      <div ref="areaHoverPinEl" class="area-station-pin" aria-hidden="true">
+        <svg v-if="hoveredAreaStation" viewBox="0 0 256 240" :style="{ color: domainColors[hoveredAreaStation.domain] }">
+          <path :d="areaPinPath" />
+        </svg>
+      </div>
 
       <section v-if="selectedArea" v-show="!drawingArea" class="area-results" :aria-label="areaTitle" :aria-busy="loading">
         <header class="area-results__header">
@@ -21,15 +31,18 @@
         <ul v-else ref="areaList" class="area-results__list">
           <li v-for="{ station, row, status } in areaPageStations" :key="station.wigosId" :data-station="station.wigosId"
               :class="{ 'area-results__active': activeAreaStation?.wigosId === station.wigosId }"
-              @mouseenter="highlightAreaStation(station)" @mouseleave="highlightAreaStation()">
+              @mouseenter="highlightAreaStation(station)" @mouseleave="highlightAreaStation()"
+              @click="locateAreaStation(station)">
             <div class="area-results__station">
               <div>
                 <a :href="reportHref(station.wigosId)" target="_blank" rel="noopener noreferrer"
+                   @click.stop
                    @focus="highlightAreaStation(station)" @blur="highlightAreaStation()">{{ station.name }}</a>
                 <small v-if="station.wigosId !== station.name">{{ station.wigosId }}</small>
               </div>
               <button type="button" class="area-results__locate" :title="t('map.locateAreaStation')"
-                      :aria-label="t('map.locateAreaStation') + ' ' + station.name" @click="locateAreaStation(station)">
+                      :aria-label="t('map.locateAreaStation') + ' ' + station.name"
+                      :aria-pressed="activeAreaStation?.wigosId === station.wigosId" @click.stop="locateAreaStation(station)">
                 <i class="el-icon-map-location" aria-hidden="true"><MapLocation /></i>
               </button>
             </div>
@@ -97,6 +110,14 @@
           <span class="oscar-legend__dot" :style="{ background: item.color }"></span>
           {{ $t(item.labelKey) }}
         </div>
+        <div class="oscar-legend__statuses">
+          <div v-for="item in statusSymbols" :key="item.status" class="oscar-legend__item">
+            <svg viewBox="0 0 16 16" aria-hidden="true" class="oscar-legend__symbol">
+              <path :d="item.path" fill="#808080" fill-rule="evenodd" />
+            </svg>
+            {{ t('search.advanced.' + item.id) }}
+          </div>
+        </div>
       </div>
 
       <div class="oscar-map-tools">
@@ -158,6 +179,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch 
 import { Crop, Help, Location, MapLocation } from '@element-plus/icons-vue'
 import { filterCountry, filterType, filterPrograms, filterStatuses, focusedStation } from '../stores/quickFilter'
 import Map from 'ol/Map'
+import Overlay from 'ol/Overlay'
 import View from 'ol/View'
 import TileLayer from 'ol/layer/Tile'
 import type LayerGroup from 'ol/layer/Group'
@@ -178,10 +200,10 @@ import Point from 'ol/geom/Point'
 import Polygon, { fromExtent } from 'ol/geom/Polygon'
 import LineString from 'ol/geom/LineString'
 import { fromLonLat, getPointResolution, toLonLat, transformExtent } from 'ol/proj'
-import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style'
+import { Circle as CircleStyle, Fill, Icon, Stroke, Style } from 'ol/style'
 import Control from 'ol/control/Control'
 import { defaults as defaultControls } from 'ol/control/defaults'
-import type { Station, StationDomain } from '../data/stations'
+import type { Station, StationDomain, StationStatus } from '../data/stations'
 import { domainColors } from '../data/stations'
 import { downloadCatalogueRecord } from '../utils/catalogueDownload'
 import { useI18n } from 'vue-i18n'
@@ -198,6 +220,7 @@ import {
   featureEstablished,
   featureProgramIds,
   featureStatus,
+  areaReportingStatuses,
   featureToStation,
   type WigosFeature,
   featureToRow,
@@ -235,6 +258,19 @@ const legend: { labelKey: string; domain: StationDomain; color: string }[] = [
   { labelKey: 'map.legend.subsurface', domain: 'subsurface', color: domainColors.subsurface },
   { labelKey: 'map.legend.lake', domain: 'lake', color: domainColors.lake },
 ]
+const statusSymbols = [
+  { status: 'Operational', id: 'operational', path: 'M8 2.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 1 0 0-11Z' },
+  { status: 'Partly operational', id: 'partlyOperational', path: 'M8 2 14 13H2Z' },
+  { status: 'Closed', id: 'closed', path: 'M4 2 8 6 12 2 14 4 10 8 14 12 12 14 8 10 4 14 2 12 6 8 2 4Z' },
+  { status: 'Silent', id: 'nonReporting', path: 'M8 2a6 6 0 1 0 0 12 6 6 0 1 0 0-12ZM8 4a4 4 0 1 1 0 8 4 4 0 1 1 0-8Z' },
+  { status: 'Unknown', id: 'unknown', path: 'M8 2a6 6 0 1 0 0 12 6 6 0 1 0 0-12ZM8 4a4 4 0 0 1 3.5 6L6 4.5A4 4 0 0 1 8 4ZM4.5 6l5.5 5.5A4 4 0 0 1 4.5 6Z' },
+] as const satisfies readonly { status: StationStatus; id: string; path: string }[]
+
+function statusSymbolUrl(symbol: { path: string }, color: string) {
+  return 'data:image/svg+xml,' + encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="${symbol.path}" fill="${color}" fill-rule="evenodd" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round" paint-order="stroke"/></svg>`,
+  )
+}
 
 const mapEl = ref<HTMLDivElement | null>(null)
 const basemapEl = ref<HTMLDivElement | null>(null)
@@ -311,7 +347,10 @@ const clusterSource = new VectorSource({ wrapX: false })
 const clusterLayer = new VectorLayer({
   source: clusterSource,
   visible: false,
-  style: feature => tileStyles[feature.get('domain') as StationDomain],
+  style: feature => {
+    const station = feature.get('count') === 1 ? feature.get('features')?.[0] : undefined
+    return station?.getStyle() ?? tileStyles[feature.get('domain') as StationDomain]
+  },
 })
 let tileClusterRevision = 0
 let clusterKey = ''
@@ -331,6 +370,12 @@ const overviewTileSource = new VectorTileSource({
 })
 let tileSource = overviewTileSource
 const tileStyles = Object.fromEntries(Object.entries(domainColors).map(([domain, color]) => [domain, dotStyle(color, 2.5)])) as Record<StationDomain, Style>
+const stationStatusStyles = new globalThis.Map<StationDomain, globalThis.Map<StationStatus, Style>>(
+  legend.map(({ domain, color }) => [domain, new globalThis.Map(statusSymbols.map(symbol => [
+    symbol.status,
+    new Style({ image: new Icon({ src: statusSymbolUrl(symbol, color), width: 11, height: 11 }) }),
+  ]))]),
+)
 const stationTiles = new VectorTileLayer({
   source: tileSource,
   visible: false,
@@ -516,11 +561,26 @@ const areaList = ref<HTMLUListElement>()
 const areaAscending = ref(true)
 const areaSortLabel = computed(() => t('search.th.stationName') + (areaAscending.value ? ' ↑' : ' ↓'))
 const activeAreaStation = shallowRef<Station>()
+const hoveredAreaStation = shallowRef<Station>()
+const areaPinEl = ref<HTMLDivElement>()
+const areaHoverPinEl = ref<HTMLDivElement>()
+const areaPinPath = 'M127.99414,15.9971a88.1046,88.1046,0,0,0-88,88c0,75.29688,80,132.17188,83.40625,134.55469a8.023,8.023,0,0,0,9.1875,0c3.40625-2.38281,83.40625-59.25781,83.40625-134.55469A88.10459,88.10459,0,0,0,127.99414,15.9971ZM128,72a32,32,0,1,1-32,32A31.99909,31.99909,0,0,1,128,72Z'
+const areaPinOptions = {
+  className: 'oscar-area-pin-overlay',
+  positioning: 'bottom-center' as const,
+  stopEvent: false,
+}
+const areaPin = new Overlay(areaPinOptions)
+const areaHoverPin = new Overlay(areaPinOptions)
+watch([activeAreaStation, hoveredAreaStation, basemap], ([active, hovered]) => {
+  areaPin.setPosition(active ? mapCoordinate(active.lon, active.lat) : undefined)
+  areaHoverPin.setPosition(hovered ? mapCoordinate(hovered.lon, hovered.lat) : undefined)
+})
 const areaStations = computed(() => selectedArea.value ? liveFeatures.value.flatMap(feature => {
   const station = featureToStation(feature)
   if (!station) return []
   const row = featureToRow(feature, true)
-  const status = feature.time?.interval?.some(value => value && value !== '..') ? row.status : ''
+  const status = areaReportingStatuses(feature).join(', ')
   return [{ station, row, status }]
 }).sort((a, b) => (areaAscending.value ? 1 : -1) *
   (a.station.name.localeCompare(b.station.name, locale.value) || a.station.wigosId.localeCompare(b.station.wigosId))) : [])
@@ -528,27 +588,22 @@ const areaTitle = computed(() => t('map.areaStations', { count: areaStations.val
 const areaPageCount = computed(() => Math.max(1, Math.ceil(areaStations.value.length / areaPageSize)))
 const areaPageStations = computed(() => areaStations.value.slice((areaPage.value - 1) * areaPageSize, areaPage.value * areaPageSize))
 const areaOutline = new Feature<Polygon>()
-const areaHighlight = new Feature<Point>()
 const areaOutlineLayer = new VectorLayer({
   source: new VectorSource({ features: [areaOutline], wrapX: false }),
   style: new Style({ stroke: new Stroke({ color: '#005a9f', width: 2 }), fill: new Fill({ color: 'rgba(0, 90, 159, 0.07)' }) }),
 })
-const areaHighlightLayer = new VectorLayer({
-  source: new VectorSource({ features: [areaHighlight], wrapX: false }),
-  style: dotStyle('#005a9f', 7),
-})
 const areaBox = new DragBox({ className: 'oscar-area-drag-box' })
 areaBox.setActive(false)
 
-function highlightAreaStation(station = activeAreaStation.value) {
-  areaHighlight.setGeometry(station ? new Point(mapCoordinate(station.lon, station.lat)) : undefined)
+function highlightAreaStation(station?: Station) {
+  hoveredAreaStation.value = station?.wigosId !== activeAreaStation.value?.wigosId ? station : undefined
 }
 
 function locateAreaStation(station: Station) {
   const view = mapRef.value?.getView()
   if (!view) return
   activeAreaStation.value = station
-  highlightAreaStation(station)
+  highlightAreaStation()
   view.cancelAnimations()
   view.animate({
     center: mapCoordinate(station.lon, station.lat),
@@ -696,14 +751,18 @@ function dotStyle(color: string, radius = 2) {
 }
 
 function buildCloud(): Feature[] {
-  const stations = props.visibleStations ?? liveFeatures.value.flatMap(f => {
+  const selectedStatuses = props.mapQuery?.reportingStatuses
+  const stations = props.visibleStations?.map(station => ({ station, status: station.status })) ?? liveFeatures.value.flatMap(f => {
     const station = featureToStation(f)
-    return station ? [station] : []
+    if (!station) return []
+    const statuses = selectedArea.value || !f.mapSummary ? areaReportingStatuses(f) : []
+    const status = statusSymbols.find(symbol => selectedStatuses?.includes(symbol.id) && statuses.includes(symbol.status))?.status ?? statuses[0]
+    return [{ station, status }]
   })
-  return stations.map(s => {
+  return stations.map(({ station: s, status }) => {
     const feature = new Feature({ geometry: new Point(mapCoordinate(s.lon, s.lat)), station: s, domain: s.domain,
       wigosId: props.visibleStations ? undefined : s.wigosId })
-    feature.setStyle(tileStyles[s.domain])
+    feature.setStyle((status && stationStatusStyles.get(s.domain)?.get(status)) || tileStyles[s.domain])
     return feature
   })
 }
@@ -976,11 +1035,16 @@ async function loadViewport() {
     if (retry) tileSource.refresh()
     return
   }
-  const bbox = area ?? currentBbox()
-  viewportNeedsSize = !bbox
-  if (!bbox) return
+  const visibleBbox = area ?? currentBbox()
+  viewportNeedsSize = !visibleBbox
+  if (!visibleBbox) return
   // An exact station lookup can start outside the visible map.
   const shouldFocus = !area && props.focusExactMatch && query.q?.startsWith('0-') && focusedExactQuery !== query
+  const bounds = query.bbox
+  const bbox: WigosBbox | undefined = shouldFocus ? bounds : bounds ? [
+    Math.max(visibleBbox[0], bounds[0]), Math.max(visibleBbox[1], bounds[1]),
+    Math.min(visibleBbox[2], bounds[2]), Math.min(visibleBbox[3], bounds[3]),
+  ] : visibleBbox
   emit('viewportCount', query, undefined, false)
   const controller = new AbortController()
   viewportController = controller
@@ -1012,7 +1076,8 @@ async function loadViewport() {
     source?.addFeatures(buildCloud())
   }
   try {
-    const result = await loadFilteredMap({ ...query, bbox: shouldFocus ? undefined : bbox, signal: controller.signal }, (delta, loaded, total) => {
+    const emptyBounds = bbox && (bbox[0] >= bbox[2] || bbox[1] >= bbox[3])
+    const result = emptyBounds ? { features: [], unmapped: 0, snapshotDate: undefined } : await loadFilteredMap({ ...query, bbox, signal: controller.signal }, (delta, loaded, total) => {
       if (seq !== loadSeq || controller.signal.aborted) return
       for (const feature of delta) received.set(feature.id, feature)
       mapLoaded.value = loaded
@@ -1087,7 +1152,7 @@ onMounted(() => {
     controls: defaultControls({ zoom: false, rotate: false }).extend([
       createMetricScaleLine(),
     ]),
-    layers: [areaOutlineLayer, stationTiles, vector, clusterLayer, areaHighlightLayer],
+    layers: [areaOutlineLayer, stationTiles, vector, clusterLayer],
     view: new View({
       center: fromLonLat(DEFAULT_CENTER),
       resolution: DEFAULT_WORLD_RESOLUTION,
@@ -1111,7 +1176,13 @@ onMounted(() => {
     layers: [landLayer, gridLayer, ...tiandituLayers],
     view: map.getView(),
   })
-  if (props.areaSelection) map.addInteraction(areaBox)
+  if (props.areaSelection) {
+    map.addInteraction(areaBox)
+    areaPin.setElement(areaPinEl.value)
+    map.addOverlay(areaPin)
+    areaHoverPin.setElement(areaHoverPinEl.value)
+    map.addOverlay(areaHoverPin)
+  }
   map.on('singleclick', (evt) => {
     if (drawingArea.value) return
     const hit = stationAtPixel(map, evt.pixel)
@@ -1213,13 +1284,24 @@ watch(locale, () => {
   for (const kind of Object.keys(worldLayers) as WorldStyleKey[]) void loadWorldLayer(kind)
 })
 
-watch(() => props.mapQuery, () => {
+watch(() => props.mapQuery, (query, previous) => {
   viewportController?.abort()
   loadSeq++
   filteredSnapshotDate.value = ''
   mapLoaded.value = 0
   mapLoadTotal.value = 0
   loading.value = true
+  const bounds = query?.bbox
+  const map = mapRef.value
+  if (bounds && !selectedArea.value && bounds.some((value, index) => value !== previous?.bbox?.[index]) && mapEl.value?.clientWidth) {
+    const south = Math.max(-85, bounds[1])
+    const north = Math.min(85, bounds[3])
+    if (south < north) {
+      map?.getView().fit([...mapCoordinate(bounds[0], south), ...mapCoordinate(bounds[2], north)], {
+        padding: [24, 24, 24, 24], maxZoom: 12,
+      })
+    }
+  }
   window.clearTimeout(viewportTimer)
   viewportTimer = window.setTimeout(() => void loadViewport(), 350)
 }, { deep: true })
@@ -1617,7 +1699,7 @@ function flyToFocusedStation(focus = focusedStation.value) {
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid #dce6ef;
   color: #35536e;
-  font-size: 12px;
+  font-size: 14px;
   min-width: 128px;
   box-shadow: 0 2px 10px rgba(0, 91, 171, 0.08);
 }
@@ -1635,9 +1717,19 @@ function flyToFocusedStation(focus = focusedStation.value) {
 }
 
 .oscar-legend__dot {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
+}
+
+.oscar-legend__statuses {
+  margin-top: 7px;
+  padding-top: 3px;
+  border-top: 1px solid #dce6ef;
+}
+.oscar-legend__symbol {
+  width: 14px;
+  height: 14px;
 }
 
 .oscar-map-tools {
@@ -1709,12 +1801,16 @@ function flyToFocusedStation(focus = focusedStation.value) {
 .area-results__status { margin: 0; padding: 8px 12px; font-size: 12px; overflow-wrap: anywhere; }
 .area-results__list { flex: 1; min-height: 0; margin: 0; padding: 0; list-style: none; overflow: auto; overscroll-behavior: contain; }
 .area-results__list li { padding: 9px 12px; border-bottom: 1px solid #e9eff5; overflow-wrap: anywhere; }
+.area-results__list li { cursor: pointer; }
 .area-results__list li:hover, .area-results__list li:focus-within, .area-results__active { background: #e6f2ff; }
 .area-results__station { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
 .area-results__header button, .area-results__locate { flex: 0 0 auto; display: grid; place-items: center; width: 27px; height: 27px; padding: 0; border: 1px solid #dce6ef; border-radius: 4px; background: #fff; color: #005a9f; cursor: pointer; }
 .area-results__header button:hover, .area-results__locate:hover { border-color: #005a9f; }
 .area-results__locate i { display: flex; }
 .area-results__locate svg { width: 17px; height: 17px; }
+.area-results__locate[aria-pressed='true'] { border-color: #005a9f; background: #e6f2ff; }
+.oscar-ol-wrap :deep(.oscar-area-pin-overlay) { pointer-events: none !important; }
+.area-station-pin svg { width: 36px; height: 34px; display: block; overflow: visible; fill: currentColor; stroke: #fff; stroke-width: 10; paint-order: stroke; filter: drop-shadow(0 1px 2px #25455a70); }
 .area-results__list dl { display: grid; gap: 3px; margin: 6px 0 0; font-size: 12px; }
 .area-results__list dl div { display: flex; align-items: baseline; gap: 5px; }
 .area-results__list dt { flex: 0 0 auto; font-weight: 600; }
@@ -1803,6 +1899,9 @@ function flyToFocusedStation(focus = focusedStation.value) {
   background: transparent;
   color: #687e90;
   font-size: 10px;
+}
+.oscar-legend__statuses .oscar-legend__item{
+  gap: 5px;
 }
 </style>
 

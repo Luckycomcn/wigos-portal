@@ -3,6 +3,7 @@ import { facilityTypes } from '../data/wmdrCodes'
 import {
   WIGOS_COLLECTION_URL, buildItemsUrl, queryFeatures, searchFacilities,
   resolveFacilityTypeId, resolveProgramId, resolveTerritoryId, resolveRegionId,
+  REPORTING_STATUS_FIELD, hasElevationFilter, matchesElevation, matchesAreaReportingStatus,
   type WigosFeature, type WigosBbox, type WigosItemsQuery, type WigosFeatureCollection, type FacilitySearchParams,
 } from './wigos'
 
@@ -68,7 +69,7 @@ async function pointRows(type: string, signal?: AbortSignal) {
 }
 export function canUseTypeSnapshot(query: FacilitySearchParams) {
   return overview.source === WIGOS_COLLECTION_URL && !!query.types?.length && !query.q?.trim() &&
-    ![query.programs, query.territories, query.variables, query.regions].some(v => v?.length)
+    !hasElevationFilter(query) && ![query.programs, query.territories, query.variables, query.regions, query.reportingStatuses].some(v => v?.length)
 }
 async function typeSnapshot(query: FacilitySearchParams, progress: MapProgress): Promise<FilteredMapResult> {
   const types = values(query.types, resolveFacilityTypeId)
@@ -128,17 +129,21 @@ async function liveMap(query: FacilitySearchParams, progress: MapProgress, areaR
   // type so every returned point still has its correct type/colour, even when
   // the record is new and absent from the static snapshot.
   const typeIds = query.types?.length ? values(query.types, resolveFacilityTypeId) : facilityTypes.map(t => t.id)
+  const reportingStatuses = [...new Set(query.reportingStatuses ?? [])].sort()
   const axes: [string, string[]][] = [
     ['facilityType.id', typeIds],
     ['observations.programAffiliations.programAffiliation.id', values(query.programs, resolveProgramId)],
     ['territories.territory.id', values(query.territories, resolveTerritoryId)],
     ['observations.observedProperty.id', [...new Set((query.variables ?? []).map(String))].sort()],
     ['wmoRegion.id', values(query.regions, resolveRegionId)],
+    [REPORTING_STATUS_FIELD, areaRows ? [] : reportingStatuses],
   ]
   const keyword = query.q?.trim() ?? ''
   const exactId = areaRows && keyword.startsWith('0-') ? keyword : ''
   const title = exactId ? '' : keyword
-  const matchesArea = (feature: WigosFeature) => inBbox(feature, query.bbox) && (!exactId || feature.id === exactId)
+  const matchesArea = (feature: WigosFeature) => inBbox(feature, query.bbox) &&
+    matchesElevation(feature, query) && (!exactId || feature.id === exactId) &&
+    (!areaRows || matchesAreaReportingStatus(feature, reportingStatuses))
   const key = JSON.stringify([WIGOS_COLLECTION_URL, title, axes, areaRows])
   const cached = regionCache.find(c => c.key === key && c.expires > Date.now() && contains(c.bbox, query.bbox))
   if (cached) {

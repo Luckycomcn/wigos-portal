@@ -83,6 +83,7 @@ await api.searchFacilities({
   types: ['Air (fixed)', 'Air (mobile)'],
   variables: [210, 216],
   territories: ['CHE'],
+  reportingStatuses: ['operational', 'partlyOperational'],
   offset: 25,
 })
 const multiSearchParams = new URL(calls.at(-1)).searchParams
@@ -90,6 +91,7 @@ assert.equal(multiSearchParams.get('filter'), "properties.title LIKE 'station'")
 assert.equal(multiSearchParams.get('facilityType.id'), 'airFixed|airMobile')
 assert.equal(multiSearchParams.get('observations.observedProperty.id'), '210|216')
 assert.equal(multiSearchParams.get('territories.territory.id'), 'CHE')
+assert.equal(multiSearchParams.get('observations.programAffiliations.reportingStatus.id'), 'operational|partlyOperational')
 assert.equal(multiSearchParams.get('offset'), '25')
 const unmappedSample = { ...sample, geometry: null }
 assert.equal(api.featureToRow(unmappedSample), null)
@@ -237,6 +239,59 @@ assert.equal(area.features[0].time.interval[0], '2025-08-19')
 const exactArea = await maps.loadFilteredMap({ ...areaQuery, q: '0-test-inside' }, () => {}, { areaRows: true })
 assert.deepEqual(Array.from(exactArea.features, station => station.id), ['0-test-inside'])
 console.log('PASS: area results retain table fields and apply exact IDs without single-station requests')
+
+maps.clearMapCache(); api.clearWigosCache()
+const areaStatusStations = [
+  { ...area.features[0], id: 'open' },
+  { ...area.features[0], id: 'closed', time: { interval: ['2020-01-01', '2021-01-01'] } },
+  { ...area.features[0], id: 'silent', properties: {
+    ...area.features[0].properties,
+    observations: [{ programAffiliations: [{ reportingStatus: { id: 'nonReporting' } }] }],
+  } },
+]
+let areaStatusRequests = 0
+globalThis.fetch = async url => {
+  areaStatusRequests++
+  assert.equal(new URL(url).searchParams.has(api.REPORTING_STATUS_FIELD), false)
+  return new Response(JSON.stringify({
+    features: areaStatusStations, numberMatched: areaStatusStations.length, numberReturned: areaStatusStations.length,
+  }))
+}
+const areaWithStatuses = async reportingStatuses => {
+  const progressIds = []
+  const result = await maps.loadFilteredMap({ ...areaQuery, reportingStatuses }, delta => {
+    progressIds.push(...delta.map(feature => feature.id))
+  }, { areaRows: true })
+  assert.deepEqual(progressIds, Array.from(result.features, feature => feature.id))
+  return progressIds
+}
+assert.deepEqual(await areaWithStatuses(['operational']), ['open'])
+assert.deepEqual(await areaWithStatuses(['closed', 'nonReporting']), ['closed', 'silent'])
+assert.deepEqual(await areaWithStatuses([]), ['open', 'closed', 'silent'])
+assert.equal(areaStatusRequests, 1)
+
+maps.clearMapCache(); api.clearWigosCache()
+const elevations = [
+  { ...sample, id: 'below', geometry: { type: 'Point', coordinates: [0.5, 0.5, 99] } },
+  { ...sample, id: 'at-min', geometry: { type: 'Point', coordinates: [0.5, 0.5, 100] } },
+  { ...sample, id: 'at-max', geometry: { type: 'Point', coordinates: [0.5, 0.5, 200] } },
+  { ...sample, id: 'missing', geometry: { type: 'Point', coordinates: [0.5, 0.5] } },
+]
+globalThis.fetch = async url => {
+  const params = new URL(url).searchParams
+  assert.equal(params.get('observations.programAffiliations.reportingStatus.id'), 'operational')
+  assert.equal(params.get('bbox'), '0,0,1,1')
+  return new Response(JSON.stringify({ features: elevations, numberMatched: elevations.length, numberReturned: elevations.length }))
+}
+const elevationQuery = {
+  types: ['landFixed'], reportingStatuses: ['operational'], bbox: [0, 0, 1, 1], minElevation: 100, maxElevation: 200,
+}
+const elevationPage = await api.searchFacilities({ ...elevationQuery, limit: 1, offset: 1 })
+assert.equal(elevationPage.numberMatched, 2)
+assert.deepEqual(Array.from(elevationPage.features, feature => feature.id), ['at-max'])
+const elevationMap = await maps.loadFilteredMap(elevationQuery, () => {})
+assert.deepEqual(Array.from(elevationMap.features, feature => feature.id), ['at-min', 'at-max'])
+console.log('PASS: coordinate, reporting status and elevation filters combine for list and map')
 
 maps.clearMapCache(); api.clearWigosCache()
 let active = 0, peak = 0, compactCalls = []

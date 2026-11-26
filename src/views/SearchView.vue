@@ -2,7 +2,13 @@
   <div class="station-browser">
     <div class="criteria-column">
     <aside class="criteria-card">
-      <header><h2>{{ $t('search.criteria') }}</h2><el-button size="small" @click="reset">{{ $t('common.reset') }}</el-button></header>
+      <header>
+        <h2>{{ $t('search.criteria') }}</h2>
+        <div class="criteria-actions">
+          <el-button native-type="button" size="small" @click="reset">{{ $t('common.reset') }}</el-button>
+          <el-button type="primary" native-type="submit" form="search-elevation" size="small">{{ t('common.search') }}</el-button>
+        </div>
+      </header>
       <label class="criterion"><span>{{ $t('search.keyword') }}</span><el-input v-model="keyword" clearable @focus="keywordFocused = true" @blur="keywordFocused = false" @keyup.enter="submitKeyword" :placeholder="$t('search.keywordPlaceholder')" :prefix-icon="Search" /></label>
       <p v-if="keywordTooShort" role="status">{{ t('home.searchMinLength') }}</p>
       <label v-for="field in fields" :key="field.key" class="criterion">
@@ -11,20 +17,57 @@
           <el-option v-for="option in field.options" :key="option.value" :label="option.label" :value="option.value" />
         </el-select>
       </label>
+      <label class="criterion">
+        <span>{{ t('search.advanced.approval') }}</span>
+        <el-select v-model="approvalStatus" :aria-label="t('search.advanced.approval')">
+          <el-option value="all" :label="t('common.all')" />
+          <el-option v-for="status in approvalStatuses" :key="status" :value="status" :label="t('search.advanced.' + status)" />
+        </el-select>
+        <small v-if="approvalStatus !== 'all'" role="status">{{ t('search.advanced.approvalUnavailable') }}</small>
+      </label>
+      <fieldset class="advanced-filter">
+        <legend>{{ t('search.advanced.reportingStatus') }}</legend>
+        <div class="status-source">
+          <label><input v-model="statusSource" type="radio" value="declared" /> {{ t('search.advanced.declared') }}</label>
+          <label><input v-model="statusSource" type="radio" value="assessed" /> {{ t('search.advanced.assessed') }}</label>
+        </div>
+        <el-select v-model="selectedReportingStatuses" multiple collapse-tags collapse-tags-tooltip clearable
+                   :placeholder="t('common.all')"
+                   :aria-label="t('search.advanced.reportingStatus')">
+          <el-option v-for="status in visibleStatuses" :key="status" :value="status" :label="t('search.advanced.' + status)" />
+        </el-select>
+        <!-- <p v-if="statusSource === 'assessed'" role="status">{{ t('search.advanced.assessedUnavailable') }}</p> -->
+      </fieldset>
+      <form id="search-elevation" class="range-filter" @submit.prevent="applyRanges">
+        <fieldset class="advanced-filter">
+          <legend>{{ t('search.advanced.elevation') }}</legend>
+          <div class="range-filter__grid">
+            <label><span>{{ t('search.advanced.minElevation') }}</span><input v-model="rangeDraft.minElevation" type="number" step="any" /></label>
+            <label><span>{{ t('search.advanced.maxElevation') }}</span><input v-model="rangeDraft.maxElevation" type="number" step="any" /></label>
+          </div>
+        </fieldset>
+        <p v-if="invalidRange" role="alert">{{ t('search.advanced.invalidRange') }}</p>
+      </form>
     </aside>
     <section v-if="mode === 'map'" class="area-controls">
       <div class="area-controls__actions">
         <el-button :type="mapWidget?.drawingArea ? 'default' : 'primary'" :disabled="!mapWidget" @click="toggleAreaDrawing">
           {{ t(mapWidget?.drawingArea ? 'map.cancelAreaDrawing' : mapWidget?.selectedArea ? 'map.reselectArea' : 'map.selectArea') }}
         </el-button>
-        <el-button v-if="mapWidget?.selectedArea" @click="mapWidget?.setSelectedArea()">{{ t('map.clearArea') }}</el-button>
       </div>
       <p v-if="mapWidget?.drawingArea" role="status">{{ t('map.areaDrawHint') }}</p>
       <form v-if="mapWidget?.selectedArea" class="area-controls__coordinates" @submit.prevent="applyArea">
-        <label>{{ t('map.areaSouthwest') }} <input v-model="southwest" required autocomplete="off" /></label>
-        <label>{{ t('map.areaNortheast') }} <input v-model="northeast" required autocomplete="off" /></label>
+        <div class="range-filter__grid">
+          <label><span>{{ t('search.advanced.longitudeFrom') }}</span><input v-model="areaCoordinates.west" type="number" step="any" required /></label>
+          <label><span>{{ t('search.advanced.longitudeTo') }}</span><input v-model="areaCoordinates.east" type="number" step="any" required /></label>
+          <label><span>{{ t('search.advanced.latitudeFrom') }}</span><input v-model="areaCoordinates.south" type="number" step="any" required /></label>
+          <label><span>{{ t('search.advanced.latitudeTo') }}</span><input v-model="areaCoordinates.north" type="number" step="any" required /></label>
+        </div>
         <p v-if="invalidArea" role="alert">{{ t('map.areaInvalid') }}</p>
-        <el-button native-type="submit" size="small">{{ t('map.applyArea') }}</el-button>
+        <div class="area-controls__actions" style="justify-content: space-between;">
+          <el-button size="small" v-if="mapWidget?.selectedArea" @click="mapWidget?.setSelectedArea()">{{ t('map.clearArea') }}</el-button>
+          <el-button native-type="submit" type="primary" size="small">{{ t('map.applyArea') }}</el-button>
+        </div>
       </form>
     </section>
     </div>
@@ -119,14 +162,14 @@ const keywordTooShort = computed(() => keywordFocused.value && Array.from(keywor
 const mode = ref<'map' | 'list'>(route.query.mode === 'list' ? 'list' : 'map')
 const mapOpened = ref(mode.value === 'map')
 const mapWidget = ref<InstanceType<typeof OscarMap>>()
-const southwest = ref('')
-const northeast = ref('')
+const areaCoordinates = reactive({ west: '', south: '', east: '', north: '' })
 const invalidArea = ref(false)
 
 watch(() => mapWidget.value?.selectedArea, area => {
-  const format = (lon: number, lat: number) => `${lon.toFixed(6)}, ${lat.toFixed(6)}`
-  southwest.value = area ? format(area[0], area[1]) : ''
-  northeast.value = area ? format(area[2], area[3]) : ''
+  areaCoordinates.west = area ? area[0].toFixed(6) : ''
+  areaCoordinates.south = area ? area[1].toFixed(6) : ''
+  areaCoordinates.east = area ? area[2].toFixed(6) : ''
+  areaCoordinates.north = area ? area[3].toFixed(6) : ''
   invalidArea.value = false
 })
 
@@ -135,15 +178,42 @@ function toggleAreaDrawing() {
 }
 
 function applyArea() {
-  const parts = [...southwest.value.split(','), ...northeast.value.split(',')].map(value => value.trim())
+  const parts = [areaCoordinates.west, areaCoordinates.south, areaCoordinates.east, areaCoordinates.north]
   const [west, south, east, north] = parts.map(Number)
-  invalidArea.value = parts.length !== 4 || parts.some(value => !value) ||
+  invalidArea.value = parts.some(value => String(value).trim() === '') ||
     west === undefined || south === undefined || east === undefined || north === undefined ||
     ![west, south, east, north].every(Number.isFinite) ||
     west < -180 || east > 180 || south < -85 || north > 85 || west >= east || south >= north
   if (!invalidArea.value) mapWidget.value?.setSelectedArea([west!, south!, east!, north!])
 }
 const filters = reactive<Record<FilterKey, string[]>>({ type: [], program: [], variable: [], ra: [], terr: [] })
+const statusSource = ref<'declared' | 'assessed'>('declared')
+const reportingStatuses = ref<string[]>([])
+const assessedStatuses = ref<string[]>([])
+const selectedReportingStatuses = computed({
+  get: () => statusSource.value === 'declared' ? reportingStatuses.value : assessedStatuses.value,
+  set: (value: string[]) => {
+    if (statusSource.value === 'declared') reportingStatuses.value = value
+    else assessedStatuses.value = value
+  },
+})
+const declaredStatuses = ['operational', 'partlyOperational', 'unknown', 'nonReporting', 'closed']
+const visibleStatuses = computed(() => statusSource.value === 'declared' ? declaredStatuses : declaredStatuses.slice(0, -1))
+const approvalStatuses = ['approved', 'declined', 'pending']
+const approvalStatus = ref('all')
+const emptyRangeDraft = { minElevation: '', maxElevation: '' }
+const rangeDraft = reactive({ ...emptyRangeDraft })
+const appliedRange = shallowRef<Pick<FacilitySearchParams, 'minElevation' | 'maxElevation'>>({})
+const invalidRange = ref(false)
+
+function applyRanges() {
+  const { minElevation, maxElevation } = rangeDraft
+  const minimum = minElevation === '' ? undefined : Number(minElevation)
+  const maximum = maxElevation === '' ? undefined : Number(maxElevation)
+  invalidRange.value = minimum !== undefined && maximum !== undefined && minimum > maximum
+  if (invalidRange.value) return
+  appliedRange.value = { minElevation: minimum, maxElevation: maximum }
+}
 const rows = ref<Station[]>([])
 const total = ref(0)
 const fetchedAt = ref('')
@@ -164,6 +234,12 @@ function flattenVariables(nodes: VariableNode[]): { id: number; text: string }[]
     if (node.children?.length) out.push(...flattenVariables(node.children))
   }
   return out
+}
+
+function resetRanges() {
+  Object.assign(rangeDraft, emptyRangeDraft)
+  appliedRange.value = {}
+  invalidRange.value = false
 }
 
 const variableOptions = flattenVariables(variableTreeRaw as VariableNode[])
@@ -191,6 +267,11 @@ const activeCriteria = computed(() =>
     keyword.value.trim(),
     ...fields.value.flatMap(({ key, options }) =>
       filters[key].map((value) => options.find((option) => option.value === value)?.label ?? value)),
+    ...(statusSource.value === 'declared' ? reportingStatuses.value.map(status => t('search.advanced.' + status)) : []),
+    ...(['minElevation', 'maxElevation'] as const).flatMap(key => {
+      const value = appliedRange.value[key]
+      return value === undefined ? [] : [t('search.advanced.' + key) + ' ' + value + ' m']
+    }),
   ].filter(Boolean),
 )
 
@@ -201,6 +282,8 @@ const mapQuery = computed(() => ({
   territories: [...filters.terr],
   variables: filters.variable.map(Number),
   regions: [...filters.ra],
+  reportingStatuses: statusSource.value === 'declared' ? [...reportingStatuses.value] : [],
+  ...appliedRange.value,
 }))
 const showMapCount = computed(() => mode.value === 'map' && (Boolean(mapWidget.value?.selectedArea) || !useMapTiles(mapQuery.value)))
 const uniqueKeywordMatch = shallowRef<{ query: FacilitySearchParams; id: string }>()
@@ -260,13 +343,13 @@ async function loadPage() {
   pageController?.abort()
   const seq = ++requestSeq
   const mapOnly = mode.value === 'map'
-  if (mapOnly && mapWidget.value?.selectedArea) {
+  const query = mapQuery.value
+  if (mapOnly && (mapWidget.value?.selectedArea || query.minElevation !== undefined || query.maxElevation !== undefined)) {
     loading.value = false
     return
   }
   const controller = new AbortController()
   pageController = controller
-  const query = mapQuery.value
   loading.value = true
   error.value = ''
   try {
@@ -312,6 +395,11 @@ function coordinate(value: number | null, latitude: boolean) {
 function reset() {
   keyword.value = ''
   for (const key of Object.keys(filters) as FilterKey[]) filters[key] = []
+  statusSource.value = 'declared'
+  reportingStatuses.value = []
+  assessedStatuses.value = []
+  approvalStatus.value = 'all'
+  resetRanges()
   page.value = 1
   void loadPage()
 }
@@ -379,17 +467,26 @@ watch([rows, total, activeCriteria], () => {
 </script>
 
 <style scoped lang="scss">
-.station-browser { --search-accent: var(--oscar-theme); display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 18px; padding: 16px; background: #f2f6fa; align-items: start; color: #536475; }
+.station-browser { --search-accent: var(--oscar-theme); display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; padding: 16px; background: #f2f6fa; align-items: start; color: #536475; }
 .criteria-card, .results-card { background: white; border: 1px solid #e0e8ec; border-radius: 8px; padding: 20px; min-width: 0; }
 .criteria-card { max-height: calc(100vh - 190px); overflow-y: auto; }
 .criteria-column { min-width: 0; }
+.advanced-filter { min-width: 0; margin: 12px 0 12px; padding: 8px; }
+.advanced-filter legend { padding: 0 4px; font-size: 13px; }
+.advanced-filter p, .criterion small, .range-filter p { margin: 6px 0 0; font-size: 12px; }
+.status-source { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; font-size: 12px; }
+.status-source label { display: flex; align-items: center; gap: 3px; }
+.range-filter__grid { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.range-filter__grid label { display: grid; gap: 4px; font-size: 12px; }
+.range-filter__grid input { box-sizing: border-box; width: 100%; padding: 5px; border: 1px solid #c4d2de; border-radius: 4px; }
+.range-filter [role='alert'] { color: #a12727; margin-bottom: 6px; }
+.criteria-actions { display: flex; justify-content: flex-end; gap: 8px; margin-left: auto; }
+.criteria-actions :deep(.el-button + .el-button) { margin-left: 0; }
 .area-controls { margin-top: 12px; padding: 14px; background: #fff; border: 1px solid #e0e8ec; border-radius: 8px; }
 .area-controls__actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .area-controls__actions :deep(.el-button + .el-button) { margin-left: 0; }
 .area-controls p { margin: 8px 0 0; font-size: 12px; }
 .area-controls__coordinates { display: grid; gap: 8px; margin-top: 12px; }
-.area-controls__coordinates label { display: grid; gap: 4px; font-size: 12px; }
-.area-controls__coordinates input { min-width: 0; padding: 6px 8px; border: 1px solid #c4d2de; border-radius: 4px; color: #253b50; }
 .area-controls__coordinates button { justify-self: start; }
 .area-controls p[role='alert'] { color: #a12727; }
 header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
